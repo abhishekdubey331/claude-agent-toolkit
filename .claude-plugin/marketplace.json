@@ -1,0 +1,15 @@
+{
+  "name": "claude-agent-toolkit",
+  "owner": {
+    "name": "Abhishek Dubey",
+    "url": "https://github.com/abhishekdubey331"
+  },
+  "plugins": [
+    {
+      "name": "agent-toolkit",
+      "source": "./agent-toolkit",
+      "description": "Interactive Socratic issue crafting, incremental implementation, surgical bug-fixing, and code simplification skills + slash commands for Claude Code.",
+      "version": "0.1.0"
+    }
+  ]
+}

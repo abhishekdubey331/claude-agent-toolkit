@@ -1,0 +1,9 @@
+{
+  "name": "agent-toolkit",
+  "version": "0.1.0",
+  "description": "Interactive Socratic issue crafting + incremental implementation + surgical bug-fixing + code simplification.",
+  "author": {
+    "name": "Abhishek Dubey",
+    "url": "https://github.com/abhishekdubey331"
+  }
+}
