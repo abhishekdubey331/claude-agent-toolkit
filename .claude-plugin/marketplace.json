@@ -8,8 +8,8 @@
     {
       "name": "agent-toolkit",
       "source": "./agent-toolkit",
-      "description": "Interactive Socratic issue crafting, incremental implementation, surgical bug-fixing, and code simplification skills + slash commands for Claude Code.",
-      "version": "0.1.0"
+      "description": "Interactive Socratic issue crafting + 13 skills covering planning, TDD, simplification, code review, debugging, security, API design, performance, migrations, and git workflow.",
+      "version": "0.2.0"
     }
   ]
 }

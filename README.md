@@ -27,13 +27,28 @@ Update later:
 
 ### Skills (auto-loaded when relevant)
 
+**Workflow & process**
+
 | Skill | When it loads |
 |---|---|
 | `interview-me` | Underlies `/agent-issue` — anchored-guess questioning, confidence tracking, out-of-scope gate. |
+| `planning-and-task-breakdown` | Decompose work into small, verifiable tasks with explicit acceptance criteria. |
 | `incremental-implementation` | Thin vertical slices; build green between slices. |
-| `debugging-and-error-recovery` | Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. |
-| `doubt-driven-development` | Spawn fresh-context adversarial reviewer before non-trivial decisions. |
+| `test-driven-development` | Failing test first; "Prove-It Pattern" for bug fixes. |
 | `code-simplification` | Strip dead branches, defensive null-checks, single-use helpers, restating-comments — without changing behavior. |
+| `doubt-driven-development` | Spawn fresh-context adversarial reviewer before non-trivial decisions. |
+| `code-review-and-quality` | Five-axis review: correctness, readability, architecture, security, performance. |
+| `debugging-and-error-recovery` | Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. |
+| `git-workflow-and-versioning` | Trunk-based development, atomic commits, Conventional Commits. |
+
+**Design & engineering**
+
+| Skill | When it loads |
+|---|---|
+| `api-and-interface-design` | Hyrum's Law, stable interfaces, deprecation-aware design. REST/GraphQL, module boundaries, component props. |
+| `security-and-hardening` | Input validation, parameterized queries, auth, secrets, headers, OWASP basics. |
+| `performance-optimization` | Measure-before-optimize discipline; profiling workflow. |
+| `deprecation-and-migration` | Safely remove old systems; migrate users from old to new. |
 
 ## Notes
 
@@ -42,15 +57,7 @@ Update later:
 
 ## Attribution
 
-The following skills are adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT):
-
-- `interview-me`
-- `code-simplification`
-- `incremental-implementation`
-- `debugging-and-error-recovery`
-- `doubt-driven-development`
-
-Each skill file retains its adaptation-note header.
+All skills under `agent-toolkit/skills/` are adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT, © Addy Osmani). Each skill file retains its adaptation-note header pointing at the upstream source.
 
 ## License
 
