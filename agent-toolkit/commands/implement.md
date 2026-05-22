@@ -31,7 +31,7 @@ Decide which skills your task needs based on its shape. Read each matching skill
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
 - **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if this is a defect with a stack trace, repro, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. CLAUDE.md §5 says don't ship symptom-patches; this skill is how you avoid that.
 - **`.claude/skills/doubt-driven-development.md`** — REQUIRED before committing any non-trivial decision: new branching logic, cross-module change, irreversible side-effect, thread-safety claim, idempotence claim. Spawn a fresh-context adversarial subagent reviewer and reconcile findings BEFORE relying on the decision. Interactive mode has no pull-panda safety net — this skill is the substitute.
-- **`.claude/skills/code-simplification.md`** — DEFERRED until Phase 6. Mentioned here so you don't forget it exists.
+- **`.claude/skills/code-simplification.md`** — applied **before EVERY commit** in Phase 4 (the per-commit mini-pass). Read it now so you don't have to context-switch later.
 
 ## Compose skills — MANDATORY if task touches any `@Composable`
 
@@ -76,44 +76,42 @@ Not just "fail" — fail for the reason your task implies. A test that fails bec
 
 ---
 
-# Phase 4 — Implement
+# Phase 4 — Implement (per-commit loop: code → simplify → tests → commit)
 
-- One logical change per commit. Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`, `docs(readme): ...`.
-- Keep commit subjects under 60 chars; body explains the why if non-obvious.
-- Match existing patterns in the codebase. Don't invent abstractions — CLAUDE.md §2.
-- Don't refactor adjacent code — CLAUDE.md §3.
-- If you made a non-trivial decision (per Phase 1's doubt-driven list), invoke `.claude/skills/doubt-driven-development.md` BEFORE you commit that decision. Reconcile the subagent's findings.
+For each logical change you're about to commit, run this loop. **Do NOT batch commits at the end of the task.** Every commit must ship simplified code; no "we'll clean up later" passes.
 
----
+**Per-commit loop:**
 
-# Phase 5 — Run tests + detekt, confirm green
+1. **Code** — write the minimum code that makes the failing test (or this commit's scope) pass.
+2. **Simplify mini-pass** — apply `.claude/skills/code-simplification.md` to *only the staged/unstaged diff for this commit*. Targets:
+   - Dead branches / unreachable code introduced in this commit
+   - Defensive null-checks the type system already guarantees
+   - Single-use helpers that could be inlined
+   - Comments restating what the code already says
+   - Verbose error-handling wrapping framework guarantees (e.g. `try/catch` around a non-throwing call)
+3. **Tests + detekt for the touched files** — `./gradlew testDebugUnitTest` green, no NEW detekt findings on files in this commit's diff. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
+4. **Doubt-driven check (conditional)** — if this commit lands a non-trivial decision (new branching logic, cross-module change, thread-safety/idempotence claim, irreversible side-effect), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit.
+5. **Commit** — Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`. Subject ≤ 60 chars; body explains the *why* if non-obvious.
 
-- `./gradlew testDebugUnitTest` — all green, INCLUDING new tests
-- `./gradlew detekt` — no NEW findings on files you touched. Pre-existing findings on other files: leave them.
-
-If either fails, do not proceed to Phase 6. Fix and re-run.
-
----
-
-# Phase 6 — Simplify pass (MANDATORY — do not skip)
-
-Read **`.claude/skills/code-simplification.md`** now if you haven't already.
-
-Apply it **to your diff only** (commits between your branch's base and HEAD). Scope:
-
-- Dead branches / unreachable code
-- Defensive null-checks the type system already guarantees
-- Single-use helpers that could be inlined
-- Comments restating what the code already says
-- Verbose error-handling wrapping framework guarantees (e.g. wrapping a non-throwing call in `try/catch`)
-
-**Re-run the tests after simplifying.** They must pass without modification. If a simplification requires changing a test, you changed behavior, not just expression — **revert that simplification.**
-
-This is the step interactive mode most often skips under user impatience. Do not skip.
+**General discipline:**
+- One logical change per commit.
+- Match existing patterns. Don't invent abstractions — CLAUDE.md §2.
+- Don't refactor adjacent code outside the diff — CLAUDE.md §3.
 
 ---
 
-# Phase 7 — Final pre-stop checklist (read out loud to yourself)
+# Phase 5 — Full-suite verify (after the last commit)
+
+After your final commit, run the **full** gate one more time as a sanity check:
+
+- `./gradlew testDebugUnitTest` — all green
+- `./gradlew detekt` — no NEW findings on files you touched
+
+Per-commit simplify already cleaned each diff slice, but this catches anything cross-commit (e.g. an import added in commit 1 that became unused after commit 3). If anything is unclean, fix in a final `chore: cleanup post-implement` commit — itself subjected to the per-commit loop above.
+
+---
+
+# Phase 6 — Final pre-stop checklist (read out loud to yourself)
 
 Before saying "done", confirm each of these:
 
@@ -121,7 +119,7 @@ Before saying "done", confirm each of these:
 - [ ] Tests for the change exist and are green
 - [ ] `./gradlew testDebugUnitTest` passes
 - [ ] `./gradlew detekt` shows no new findings on touched files
-- [ ] Simplify pass was executed (Phase 6) and tests still green
+- [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
 - [ ] If any non-trivial decision was made, doubt-driven-development was invoked
 - [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after)
 - [ ] Every changed line traces directly to the task (no scope creep)
@@ -133,6 +131,8 @@ If any box is unchecked, do not stop. Address it.
 ---
 
 # Hard rules (adapted for interactive mode)
+
+Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
 - **Don't switch branches automatically.** The user picked the current branch deliberately. If main is checked out and the task is non-trivial, ASK before creating a feature branch.
 - **Don't push or open a PR.** Stop when Phase 7 is satisfied. Let the user push.

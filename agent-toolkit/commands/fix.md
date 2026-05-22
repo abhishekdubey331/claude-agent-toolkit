@@ -40,7 +40,7 @@ Match the finding's shape against the skill list. Read each matching skill **now
 - **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if the finding describes a failing test, broken build, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't push past a failing test; don't "fix" a flake with `Thread.sleep`. CLAUDE.md §5 forbids those.
 - **`.claude/skills/doubt-driven-development.md`** — REQUIRED if the finding asks you to assert a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering guarantee). Spawn a fresh-context adversarial subagent on your proposed fix BEFORE committing. Interactive mode has no pull-panda; this is the substitute.
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if the finding implies changes across >1 file. Thin slices, one commit per logical change, build green between slices.
-- **`.claude/skills/code-simplification.md`** — DEFERRED until Phase 6 (the fix's simplify pass).
+- **`.claude/skills/code-simplification.md`** — applied **before the commit** in Phase 4. Read it now.
 
 ## Compose skills — MANDATORY if the finding cites a `@Composable`
 
@@ -80,54 +80,41 @@ If you find yourself reaching for any of the above, stop and surface the trade-o
 
 ---
 
-# Phase 4 — Apply the minimal targeted fix
+# Phase 4 — Apply the minimal targeted fix (sequence: code → simplify → tests → commit)
 
-- **Read the file again at the line. Touch only the code that addresses the finding.**
-- Do NOT refactor adjacent code, even if it's tempting. CLAUDE.md §3.
-- Do NOT "improve" naming, comments, or formatting outside the finding's scope.
-- If the finding is in `@Composable` code and a compose-* skill suggests a different pattern, follow the skill — but only for the lines covered by the finding.
-- If your fix made a non-trivial correctness claim (thread-safety, idempotence, etc.), invoke `.claude/skills/doubt-driven-development.md` BEFORE committing.
+Run this sequence **in order**. Do not commit before simplify + verify.
 
-Commit with subject prefix `chore(agent-fix):` followed by a short summary (matches what the headless fixer produces, so commit history stays consistent across interactive + pipeline runs).
+1. **Apply the fix.** Read the file again at the cited line. Touch only the code that addresses the finding.
+   - Do NOT refactor adjacent code, even if it's tempting. CLAUDE.md §3.
+   - Do NOT "improve" naming, comments, or formatting outside the finding's scope.
+   - If the finding is in `@Composable` code and a compose-* skill suggests a different pattern, follow the skill — but only for the lines covered by the finding.
 
-Example:
-```
-chore(agent-fix): null-guard ConfigRepository.lastFetchTimestamp on cold start
-```
+2. **Doubt-driven check (conditional).** If your fix asserts a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering), invoke `.claude/skills/doubt-driven-development.md` and reconcile the subagent's findings BEFORE the next step.
 
-Body explains the why if non-obvious. Keep subject under 60 chars.
+3. **Simplify mini-pass.** Apply `.claude/skills/code-simplification.md` to **only the lines your fix touched**. Targets:
+   - Did your fix add a defensive null-check the type system already guarantees? Remove.
+   - Did you add a comment that restates what the code says? Remove.
+   - Did you wrap a non-throwing call in `try/catch`? Remove.
+   - Did you add a single-use helper that could be inlined? Inline.
 
----
+4. **Verify gate.** `./gradlew testDebugUnitTest` green (including any new test you added). `./gradlew detekt` shows no new findings on the touched file.
+   - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one.
+   - If a test that previously passed now fails because of your fix, you changed behavior beyond what the finding required — revisit step 1.
+   - If a simplification required a test change, revert the simplification (not the test).
 
-# Phase 5 — Run the verify gate
+5. **Commit.** Subject prefix `chore(agent-fix):` followed by a short summary (matches what the headless fixer produces, so commit history stays consistent across interactive + pipeline runs).
 
-- `./gradlew testDebugUnitTest` — green, including any new test you added
-- `./gradlew detekt` — no new findings on the touched file
+   Example:
+   ```
+   chore(agent-fix): null-guard ConfigRepository.lastFetchTimestamp on cold start
+   ```
+   Body explains the *why* if non-obvious. Keep subject under 60 chars.
 
-If either fails, do not proceed. Fix and re-run.
-
-**Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one — don't modify existing ones. If a test that previously passed now fails because of your fix, you changed behavior beyond what the finding required — revisit Phase 4.
-
----
-
-# Phase 6 — Mini simplify pass (sized to the fix's scope)
-
-Read **`.claude/skills/code-simplification.md`** if you haven't this session.
-
-Apply it ONLY to the lines your fix touched. Scope:
-
-- Did your fix add a defensive null-check the type system already guarantees? Remove.
-- Did you add a comment that restates what the code says? Remove.
-- Did you wrap a non-throwing call in `try/catch`? Remove.
-- Did you add a single-use helper that could be inlined? Inline.
-
-**Re-run tests after.** If a simplification requires test changes, revert it.
-
-This pass is small (a fix is small) but matters — fixer commits accumulate, and noise in each one compounds.
+The simplify-then-commit order is non-negotiable. Fixer commits accumulate; noise in each one compounds across the PR.
 
 ---
 
-# Phase 7 — Final pre-stop checklist
+# Phase 5 — Final pre-stop checklist
 
 Before saying done:
 
@@ -138,9 +125,9 @@ Before saying done:
 - [ ] If non-trivial correctness claim, doubt-driven-development was invoked
 - [ ] Fix is minimal — touches only the lines the finding addresses
 - [ ] No patch-mindset trap (CLAUDE.md §5 list) without commit-body justification
-- [ ] `./gradlew testDebugUnitTest` is green
-- [ ] `./gradlew detekt` shows no new findings
-- [ ] Mini simplify pass was run (Phase 6) and tests still green
+- [ ] Simplify mini-pass was run BEFORE the commit (Phase 4 step 3)
+- [ ] `./gradlew testDebugUnitTest` is green (post-simplify)
+- [ ] `./gradlew detekt` shows no new findings (post-simplify)
 - [ ] No existing test was deleted, weakened, or `@Ignore`d
 - [ ] Commit uses `chore(agent-fix):` prefix, subject ≤60 chars
 
@@ -160,4 +147,4 @@ If any box is unchecked, do not stop.
 
 # Stop condition
 
-You're done when Phase 7's checklist is fully satisfied AND you've told the user what changed + what's left (typically: push the commit).
+You're done when Phase 5's checklist is fully satisfied AND you've told the user what changed + what's left (typically: push the commit).

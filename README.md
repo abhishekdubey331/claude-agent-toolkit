@@ -21,8 +21,9 @@ Update later:
 
 | Command | Purpose |
 |---|---|
-| `/implement` | Interactive 7-phase implementer protocol: read CLAUDE.md → write failing tests → implement → simplify → verify. |
-| `/fix` | Interactive 7-phase fixer protocol: reproduce → root-cause → fix → guard → verify. Refuses symptom patches. |
+| `/implement` | Interactive implementer protocol: read CLAUDE.md → write failing tests → implement with **simplify-before-each-commit** → verify. |
+| `/fix` | Interactive fixer protocol: reproduce → root-cause → minimal fix → **simplify → tests → commit**. Refuses symptom patches. |
+| `/refactor` | Tier-gated refactoring (T1/T2/T3) using the `refactoring-strategy` playbook: classify → plan → characterize (if needed) → execute commit-by-commit with simplify before each commit. T3 enters plan mode. |
 | `/agent-issue` | Socratic issue-crafting wizard: anchored questions until ~95% intent confidence, then expands into a structured GitHub issue body and files via `gh issue create`. |
 
 ### Skills (auto-loaded when relevant)

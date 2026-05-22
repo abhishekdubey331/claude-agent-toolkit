@@ -1,7 +1,7 @@
 {
   "name": "agent-toolkit",
-  "version": "0.3.0",
-  "description": "Interactive Socratic issue crafting + incremental implementation + surgical bug-fixing + 14 skills covering planning, TDD, simplification, refactoring strategy, code review, debugging, security, API design, performance, migrations, and git workflow.",
+  "version": "0.4.0",
+  "description": "4 interactive slash commands (/implement, /fix, /refactor, /agent-issue) with simplify-before-each-commit discipline + 14 skills covering planning, TDD, simplification, refactoring strategy, code review, debugging, security, API design, performance, migrations, and git workflow.",
   "author": {
     "name": "Abhishek Dubey",
     "url": "https://github.com/abhishekdubey331"
