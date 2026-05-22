@@ -36,6 +36,7 @@ Update later:
 | `incremental-implementation` | Thin vertical slices; build green between slices. |
 | `test-driven-development` | Failing test first; "Prove-It Pattern" for bug fixes. |
 | `code-simplification` | Strip dead branches, defensive null-checks, single-use helpers, restating-comments — without changing behavior. |
+| `refactoring-strategy` | Tier-gated structural refactoring playbook: Parallel Change, Strangler Fig, Branch by Abstraction, Mikado Method, characterization tests, Two Hats Rule, stop-and-ask triggers. |
 | `doubt-driven-development` | Spawn fresh-context adversarial reviewer before non-trivial decisions. |
 | `code-review-and-quality` | Five-axis review: correctness, readability, architecture, security, performance. |
 | `debugging-and-error-recovery` | Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. |
@@ -57,7 +58,9 @@ Update later:
 
 ## Attribution
 
-All skills under `agent-toolkit/skills/` are adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT, © Addy Osmani). Each skill file retains its adaptation-note header pointing at the upstream source.
+Most skills under `agent-toolkit/skills/` are adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT, © Addy Osmani). Each skill file retains its adaptation-note header pointing at the upstream source.
+
+The `refactoring-strategy` skill is original to this repo, synthesized from Fowler's *Refactoring* (2nd ed.), Feathers' *Working Effectively with Legacy Code*, Sato's Parallel Change, Humble's Branch by Abstraction, Brolund & Ellnestam's Mikado Method, Beck, Metz, Spolsky, Anthropic's `code-modernization` plugin, CodeScene's *Agentic AI Coding* patterns, Kiro's *Refactoring Made Right*, and citypaul's refactoring SKILL.md. Full source list inside the skill.
 
 ## License
 

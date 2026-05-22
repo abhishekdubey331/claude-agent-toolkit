@@ -8,8 +8,8 @@
     {
       "name": "agent-toolkit",
       "source": "./agent-toolkit",
-      "description": "Interactive Socratic issue crafting + 13 skills covering planning, TDD, simplification, code review, debugging, security, API design, performance, migrations, and git workflow.",
-      "version": "0.2.0"
+      "description": "Interactive Socratic issue crafting + 14 skills covering planning, TDD, simplification, refactoring strategy, code review, debugging, security, API design, performance, migrations, and git workflow.",
+      "version": "0.3.0"
     }
   ]
 }
