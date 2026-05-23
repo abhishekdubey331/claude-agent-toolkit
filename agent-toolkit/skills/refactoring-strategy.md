@@ -161,6 +161,7 @@ The answer to *"but there are no tests."*
 | **Drive-by reformatting** | Whitespace/imports/style outside the diff scope poisons reviewability. |
 | **Improving adjacent code** | Expanding the blast radius beyond the request. Surgical-change discipline wins. |
 | **Symptom-swallowing** | `try/catch` that hides the bug; null-coalesce on a value that shouldn't be null; sleep/retry to mask a race. Find the root cause. |
+| **Treating a shared lambda type as "just a callback"** | A `() -> Unit` (or any `(T) -> R`) passed between routes/screens IS a public API surface. Changing its signature ripples to every call site silently — the compiler catches arity changes but not semantic ones (what the callback now expects to do, when it fires, what it's allowed to assume about VM state). Apply the same rigor as renaming a public function: list callers via the code graph, decide expand/migrate/contract, and explicitly justify the signature change in the commit body. T2-grade work, not T1. |
 
 ---
 
