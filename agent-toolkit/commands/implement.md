@@ -96,6 +96,7 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
    - Defensive null-checks the type system already guarantees
    - Single-use helpers that could be inlined
    - Comments restating what the code already says
+   - **Comment audit** — apply `.claude/skills/comment-discipline.md` to every comment in this commit's diff. The rules and examples live in that skill — this command does not restate them.
    - Verbose error-handling wrapping framework guarantees (e.g. `try/catch` around a non-throwing call)
    - **Before deleting state that crosses a system boundary** (server payload field, persisted DB column, ad-SDK callback id, analytics event property, idempotency key) — pause. Does anything outside this VM/class observe the value? If yes, deletion changes behaviour the local test suite can't see. Keep it or grep the boundary first.
 3. **Tests + detekt + lint for the touched files** — `./gradlew testDebugUnitTest` green, no NEW detekt findings on files in this commit's diff, no NEW Android Lint findings on files in this commit's diff (`./gradlew lintDebug`). Detekt and Android Lint catch different classes of problems (`SuspiciousIndentation`, deprecated APIs, resource/layout bugs are lint-only). If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
