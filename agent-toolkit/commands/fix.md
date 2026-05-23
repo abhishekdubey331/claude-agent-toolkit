@@ -48,6 +48,8 @@ Any `.kt` file under `app/src/main/.../ui/` or any function annotated `@Composab
 
 Start with `compose-state-authoring`; it routes.
 
+**Self-attestation gate (anti-skip):** the "MANDATORY" label has no programmatic enforcement. Before Phase 3, write **one line per compose skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my fix won't write var in @Composable`). Skips must be explicit ("compose skills not loaded — finding is purely a Modifier-chain reorder, no state involved"). Silent skips are what this gate exists to catch.
+
 - **`.claude/skills/compose-state-authoring.md`** — bare `var` in `@Composable`, `mutableStateOf` vs `mutableStateListOf`, `@ReadOnlyComposable` violations
 - **`.claude/skills/compose-state-hoisting.md`** — state at the wrong level
 - **`.claude/skills/compose-state-holder-ui-split.md`** — ViewModel + layout mixed in one Composable
@@ -89,13 +91,14 @@ Run this sequence **in order**. Do not commit before simplify + verify.
    - Do NOT "improve" naming, comments, or formatting outside the finding's scope.
    - If the finding is in `@Composable` code and a compose-* skill suggests a different pattern, follow the skill — but only for the lines covered by the finding.
 
-2. **Doubt-driven check (conditional).** If your fix asserts a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering), invoke `.claude/skills/doubt-driven-development.md` and reconcile the subagent's findings BEFORE the next step.
+2. **Doubt-driven check (conditional, anti-skip).** If your fix asserts a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering, public API signature change), invoke `.claude/skills/doubt-driven-development.md` and reconcile the subagent's findings BEFORE the next step. **Record the reconciliation in the commit body** — pipeline fixer mode requires this and interactive mode now matches. Skipping must be explicit ("decision was trivial because X").
 
 3. **Simplify mini-pass.** Apply `.claude/skills/code-simplification.md` to **only the lines your fix touched**. Targets:
    - Did your fix add a defensive null-check the type system already guarantees? Remove.
    - Did you add a comment that restates what the code says? Remove.
    - Did you wrap a non-throwing call in `try/catch`? Remove.
    - Did you add a single-use helper that could be inlined? Inline.
+   - **Boundary-check before deletion:** if a simplification removes state that crosses a system boundary (server payload, persisted column, ad-SDK callback id, idempotency key), pause and verify nothing outside this file observes it. The local test suite cannot see the boundary.
 
 4. **Verify gate.** `./gradlew testDebugUnitTest` green (including any new test you added). `./gradlew detekt` shows no new findings on the touched file.
    - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one.
@@ -122,7 +125,7 @@ Before saying done:
 - [ ] Concern was understood and restated to the user (Phase 1)
 - [ ] Matching skill(s) were read BEFORE writing the fix (Phase 2)
 - [ ] If the finding cited a `@Composable`, the compose-state-authoring skill (at minimum) was read
-- [ ] If non-trivial correctness claim, doubt-driven-development was invoked
+- [ ] If non-trivial correctness claim, doubt-driven-development was invoked **and the reconciliation is recorded in the commit body** (empty body on a non-trivial fix is the failure mode this checks)
 - [ ] Fix is minimal — touches only the lines the finding addresses
 - [ ] No patch-mindset trap (CLAUDE.md §5 list) without commit-body justification
 - [ ] Simplify mini-pass was run BEFORE the commit (Phase 4 step 3)

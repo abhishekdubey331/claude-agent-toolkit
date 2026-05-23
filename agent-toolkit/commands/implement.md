@@ -55,6 +55,14 @@ REVIEW.md grades 🔴 against deviations from these. If the diff touches even on
 
 After Phase 1, state to the user (briefly): which skills you loaded, and what your plan is. **Ask clarifying questions if the task is ambiguous.** The headless pipeline can't; you can.
 
+**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my plan keeps state out of @Composable bodies`). If you skip a MANDATORY skill, say so explicitly with a one-line reason. Silent skips are the failure mode this gate exists to catch.
+
+**AC-vs-environment check.** If the task's acceptance criteria require verification the agent can't run (emulator instrumentation, real ad SDK, paid API, multi-device, physical sensors), surface it explicitly here. Offer the user one of:
+1. **Narrow scope** to what's testable locally; ship the gap as a follow-up.
+2. **Stub harness** so the test compiles but flag the coverage gap in the PR body.
+3. **Hand off** the verification to a human + flag in PR body.
+Don't silently pick — the user can't see the trade-off otherwise.
+
 ---
 
 # Phase 2 — TDD: write failing tests FIRST
@@ -83,14 +91,15 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
 **Per-commit loop:**
 
 1. **Code** — write the minimum code that makes the failing test (or this commit's scope) pass.
-2. **Simplify mini-pass** — apply `.claude/skills/code-simplification.md` to *only the staged/unstaged diff for this commit*. Targets:
+2. **Simplify mini-pass** — apply `.claude/skills/code-simplification.md` to *only the staged/unstaged diff for this commit*. Branch-base for the diff is `git merge-base origin/main HEAD` (avoids confusion when a prior PR off the same branch was squash-merged). Targets:
    - Dead branches / unreachable code introduced in this commit
    - Defensive null-checks the type system already guarantees
    - Single-use helpers that could be inlined
    - Comments restating what the code already says
    - Verbose error-handling wrapping framework guarantees (e.g. `try/catch` around a non-throwing call)
+   - **Before deleting state that crosses a system boundary** (server payload field, persisted DB column, ad-SDK callback id, analytics event property, idempotency key) — pause. Does anything outside this VM/class observe the value? If yes, deletion changes behaviour the local test suite can't see. Keep it or grep the boundary first.
 3. **Tests + detekt for the touched files** — `./gradlew testDebugUnitTest` green, no NEW detekt findings on files in this commit's diff. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
-4. **Doubt-driven check (conditional)** — if this commit lands a non-trivial decision (new branching logic, cross-module change, thread-safety/idempotence claim, irreversible side-effect), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit.
+4. **Doubt-driven check (conditional, anti-skip).** If this commit lands a non-trivial decision (new branching logic, cross-module change, thread-safety/idempotence claim, irreversible side-effect, public API signature change, deleting cross-boundary state), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit. **Maintain a running decision log in the PR body** — for every decision in scope, paste either the subagent's reconciliation OR a one-line justification of why the decision didn't need adversarial review. If your decision log is empty at the end, it's wrong: you almost certainly made decisions and didn't surface them.
 5. **Commit** — Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`. Subject ≤ 60 chars; body explains the *why* if non-obvious.
 
 **General discipline:**
@@ -120,8 +129,8 @@ Before saying "done", confirm each of these:
 - [ ] `./gradlew testDebugUnitTest` passes
 - [ ] `./gradlew detekt` shows no new findings on touched files
 - [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
-- [ ] If any non-trivial decision was made, doubt-driven-development was invoked
-- [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after)
+- [ ] **Decision log in PR body is non-empty if any non-trivial decision was made**, with subagent reconciliation OR one-line justification per entry. An empty log on a multi-decision PR is the failure mode (Phase 4 step 4)
+- [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after), and the one-liner attesting to that read is in your Phase 1 self-attestation
 - [ ] Every changed line traces directly to the task (no scope creep)
 - [ ] Commits use Conventional Commits format, one logical change each
 - [ ] No deleted or weakened tests; no `@Ignore`/`@Disabled`/`@Suppress` added without commit-body justification (CLAUDE.md §5)
