@@ -100,7 +100,7 @@ Run this sequence **in order**. Do not commit before simplify + verify.
    - Did you add a single-use helper that could be inlined? Inline.
    - **Boundary-check before deletion:** if a simplification removes state that crosses a system boundary (server payload, persisted column, ad-SDK callback id, idempotency key), pause and verify nothing outside this file observes it. The local test suite cannot see the boundary.
 
-4. **Verify gate.** `./gradlew testDebugUnitTest` green (including any new test you added). `./gradlew detekt` shows no new findings on the touched file.
+4. **Verify gate.** `./gradlew testDebugUnitTest` green (including any new test you added). `./gradlew detekt` shows no new findings on the touched file. `./gradlew lintDebug` shows no new findings on the touched file — detekt and Android Lint catch different classes of problems (`SuspiciousIndentation`, deprecated APIs, resource/layout bugs are lint-only).
    - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one.
    - If a test that previously passed now fails because of your fix, you changed behavior beyond what the finding required — revisit step 1.
    - If a simplification required a test change, revert the simplification (not the test).
@@ -131,6 +131,7 @@ Before saying done:
 - [ ] Simplify mini-pass was run BEFORE the commit (Phase 4 step 3)
 - [ ] `./gradlew testDebugUnitTest` is green (post-simplify)
 - [ ] `./gradlew detekt` shows no new findings (post-simplify)
+- [ ] `./gradlew lintDebug` shows no new findings (post-simplify)
 - [ ] No existing test was deleted, weakened, or `@Ignore`d
 - [ ] Commit uses `chore(agent-fix):` prefix, subject ≤60 chars
 
