@@ -89,7 +89,7 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
    - Single-use helpers that could be inlined
    - Comments restating what the code already says
    - Verbose error-handling wrapping framework guarantees (e.g. `try/catch` around a non-throwing call)
-3. **Tests + detekt for the touched files** — `./gradlew testDebugUnitTest` green, no NEW detekt findings on files in this commit's diff. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
+3. **Tests + detekt + lint for the touched files** — `./gradlew testDebugUnitTest` green, no NEW detekt findings on files in this commit's diff, no NEW Android Lint findings on files in this commit's diff (`./gradlew lintDebug`). Detekt and Android Lint catch different classes of problems (`SuspiciousIndentation`, deprecated APIs, resource/layout bugs are lint-only). If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
 4. **Doubt-driven check (conditional)** — if this commit lands a non-trivial decision (new branching logic, cross-module change, thread-safety/idempotence claim, irreversible side-effect), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit.
 5. **Commit** — Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`. Subject ≤ 60 chars; body explains the *why* if non-obvious.
 
@@ -106,6 +106,7 @@ After your final commit, run the **full** gate one more time as a sanity check:
 
 - `./gradlew testDebugUnitTest` — all green
 - `./gradlew detekt` — no NEW findings on files you touched
+- `./gradlew lintDebug` — no NEW findings on files you touched
 
 Per-commit simplify already cleaned each diff slice, but this catches anything cross-commit (e.g. an import added in commit 1 that became unused after commit 3). If anything is unclean, fix in a final `chore: cleanup post-implement` commit — itself subjected to the per-commit loop above.
 
@@ -119,6 +120,7 @@ Before saying "done", confirm each of these:
 - [ ] Tests for the change exist and are green
 - [ ] `./gradlew testDebugUnitTest` passes
 - [ ] `./gradlew detekt` shows no new findings on touched files
+- [ ] `./gradlew lintDebug` shows no new findings on touched files
 - [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
 - [ ] If any non-trivial decision was made, doubt-driven-development was invoked
 - [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after)
