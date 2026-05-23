@@ -157,13 +157,7 @@ Scan for these patterns — each one is a concrete signal, not a vague smell:
 | Generic names | `data`, `result`, `temp`, `val`, `item` | Rename to describe the content: `userProfile`, `validationErrors` |
 | Abbreviated names | `usr`, `cfg`, `btn`, `evt` | Use full words unless the abbreviation is universal (`id`, `url`, `api`) |
 | Misleading names | Function named `get` that also mutates state | Rename to reflect actual behavior |
-| Comments explaining "what" | `// increment counter` above `count++` | Delete — the code is clear enough |
-| KDoc on a private method whose name already says it | `/** Records that a 503 was seen this session. */` above `fun recordFeatureDisabledSeen()` | Delete — the name *is* the doc |
-| Block comment >3 lines | A 5–7 line paragraph explaining a single intent | Trim — can one tight sentence carry the *why*? If yes, replace. |
-| Repeated comments restating the same intent | A `// Note:` line above a comment block above a KDoc, all saying the same thing | Keep one, delete the others |
-| Anti-optimization note already captured in the PR decision log | `// Don't inline — see PR #N` next to code whose rationale lives in the PR body | Delete; the log is the single source of truth |
-| Inline comment explaining a multi-line block | A 3-line comment above a 10-line conditional | Extract a named helper — the name replaces the comment |
-| Comments explaining "why" | `// Retry because the API is flaky under load` | Keep — they carry intent the code can't express |
+| Comment discipline — what to keep, trim, or delete | Any docstring/block/inline comment in the diff | See `.claude/skills/comment-discipline.md` (full rule set + WHY/WHAT principle + suppression pairing). Fires per-commit, not at task end. |
 
 **Redundancy:**
 
