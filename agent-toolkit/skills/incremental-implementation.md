@@ -133,6 +133,40 @@ SIMPLICITY CHECK:
 
 Three similar lines of code is better than a premature abstraction. Implement the naive, obviously-correct version first. Optimize only after correctness is proven with tests.
 
+### Rule 0.3: Reuse Before You Build
+
+Before introducing **any** new symbol — composable, ViewModel, UseCase, repository method, DTO, sealed UiState, Hilt binding, navigation route, copy constant, test tag, theme token, error mapper, formatter, test fake, analytics event — scan for an existing sibling. The full skill is in `reuse-before-you-build.md`; this is the per-slice checklist.
+
+Per slice that introduces a symbol in any of the categories above:
+
+1. **Graph search first.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor to see how it's typically extended. Walk the canonical homes for your category — shared components/screens, `usecase/`, `data/remote/dto/`, `domain/model/`, shared copy object, test-tags object, Hilt `@Module` files, navigation-route enum.
+2. **Decide: reuse > extend > mirror > new.** Pick the leftmost that fits. "Mirror" means a new symbol built as a structural sibling — same shell, same primitives, same shape, same tone.
+3. **Attest in the commit body.** One line per new symbol: `reuse: …` / `extend: …` / `mirror: …` / `new: no sibling found — confirmed via [searches]`. An empty attestation on a commit that adds a new symbol = the failure mode this rule exists to catch.
+
+```
+REUSE CHECK (UI):
+✗ New ModalBottomSheet with custom Column + AppPrimaryButton pair
+✓ Shared BottomSheet shell + BottomSheetPrimaryAction + BottomSheetDeferredAction
+
+REUSE CHECK (state holder):
+✗ New polling UseCase re-implementing backoff + correlation-id threading
+✓ Extend existing polling UseCase shape, or factor the policy into a shared helper
+
+REUSE CHECK (constants):
+✗ New "Not now" string literal in a fresh copy object
+✓ SharedCopy.NOT_NOW
+
+REUSE CHECK (DTO):
+✗ New domain-specific ErrorResponseDto with a slightly different field name
+✓ Reuse the existing ErrorResponseDto; add the variant via a sealed mapper if needed
+
+REUSE CHECK (test scaffolding):
+✗ New FakePdfRepository hand-rolling state when FakeQuizRepository already has the pattern
+✓ Mirror FakeQuizRepository's structure, or extend its base
+```
+
+If no sibling exists, that's a signal to ASK before inventing. The cost of inventing in parallel is a user-caught rewrite + a wasted intermediate commit. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
+
 ### Rule 0.5: Scope Discipline
 
 Touch only what the task requires.

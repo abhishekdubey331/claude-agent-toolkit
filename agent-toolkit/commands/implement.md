@@ -26,6 +26,17 @@ These two reads are non-negotiable. If you've already read them in this session 
 
 Decide which skills your task needs based on its shape. Read each matching skill **now, before writing code** — not "as needed" later.
 
+## Reuse scan — MANDATORY before introducing any new symbol
+
+CLAUDE.md §2 ("Reuse Before You Build", if your repo has it) is a hard gate. This applies to **any** new symbol — composable, ViewModel, UseCase, repository method, DTO, sealed UiState, Hilt binding, navigation route, copy constant, test tag, theme token, error mapper, formatter, test fake, analytics event. Full skill: `.claude/skills/reuse-before-you-build.md` (a per-symbol scan-and-decide gate) — pair with `.claude/skills/cross-module-flow-reuse.md` when the invention is a multi-step flow at 20+ lines.
+
+Procedure:
+1. **Graph search.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor. Walk the canonical homes for your category (shared components/screens, `usecase/`, `data/remote/dto/`, `domain/model/`, shared copy object, test-tags object, Hilt `@Module` files, navigation-route enum).
+2. **Decide: reuse > extend > mirror > new.** Pick the leftmost that fits.
+3. **Attest before Phase 2.** Write one line per new symbol naming your choice: `reuse: …` / `extend: …` / `mirror: …` / `new: no sibling found — searched X, Y, Z`. Silent invention = the failure mode this gate exists to catch.
+
+If you cannot find a sibling, that's a signal to ASK the user (Phase 1 ends with a user check anyway), not to invent.
+
 ## Always-applicable Addy Osmani skills (read at least one)
 
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
@@ -55,7 +66,7 @@ REVIEW.md grades 🔴 against deviations from these. If the diff touches even on
 
 After Phase 1, state to the user (briefly): which skills you loaded, and what your plan is. **Ask clarifying questions if the task is ambiguous.** The headless pipeline can't; you can.
 
-**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my plan keeps state out of @Composable bodies`). If you skip a MANDATORY skill, say so explicitly with a one-line reason. Silent skips are the failure mode this gate exists to catch.
+**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my plan keeps state out of @Composable bodies`) AND **one line per new symbol for the reuse scan** — covering composables, ViewModels, UseCases, repository methods, DTOs, copy constants, test tags, theme tokens, error mappers, formatters, test fakes, analytics events. Examples: `reuse: SharedCopy.NOT_NOW`; `extend: existing PollingUseCase — new case slots in via PollingPolicy enum`; `mirror: PdfRewardedUnlockSheet mirrors DailyLimitSheet — same shell + sheet-action primitives + icon-card header`; `new: no sibling for PdfDocumentValidator — confirmed via semantic_search for *Validator + *Pdf*`. If you skip a MANDATORY skill or invent without a sibling search, say so explicitly with a one-line reason. Silent skips are the failure mode this gate exists to catch.
 
 **AC-vs-environment check.** If the task's acceptance criteria require verification the agent can't run (emulator instrumentation, real ad SDK, paid API, multi-device, physical sensors), surface it explicitly here. Offer the user one of:
 1. **Narrow scope** to what's testable locally; ship the gap as a follow-up.
@@ -134,6 +145,7 @@ Before saying "done", confirm each of these:
 - [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
 - [ ] **Decision log in PR body is non-empty if any non-trivial decision was made**, with subagent reconciliation OR one-line justification per entry. An empty log on a multi-decision PR is the failure mode (Phase 4 step 4)
 - [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after), and the one-liner attesting to that read is in your Phase 1 self-attestation
+- [ ] **Reuse scan (`reuse-before-you-build.md`) was completed for every new symbol** — composables, ViewModels, UseCases, repository methods, DTOs, sealed UiStates, Hilt bindings, navigation routes, copy constants, test tags, theme tokens, error mappers, formatters, test fakes, analytics events. A `reuse: …` / `extend: …` / `mirror: …` / `new: …` one-liner per new symbol exists in the Phase 1 attestation. No parallel implementations of an existing pattern (raw `ModalBottomSheet` vs your shared sheet shell, ad-hoc polling vs an existing polling `UseCase`, redefined copy vs your shared copy object, etc.)
 - [ ] Every changed line traces directly to the task (no scope creep)
 - [ ] Commits use Conventional Commits format, one logical change each
 - [ ] No deleted or weakened tests; no `@Ignore`/`@Disabled`/`@Suppress` added without commit-body justification (CLAUDE.md §5)
