@@ -135,37 +135,58 @@ Three similar lines of code is better than a premature abstraction. Implement th
 
 ### Rule 0.3: Reuse Before You Build
 
-Before introducing **any** new symbol — composable, ViewModel, UseCase, repository method, DTO, sealed UiState, Hilt binding, navigation route, copy constant, test tag, theme token, error mapper, formatter, test fake, analytics event — scan for an existing sibling. The full skill is in `reuse-before-you-build.md`; this is the per-slice checklist.
+Before introducing any new symbol, scan for an existing sibling. The CORRECT action depends on the category — not all categories want reuse. The full per-category table lives in `reuse-before-you-build.md`; this is the per-slice checklist.
 
-Per slice that introduces a symbol in any of the categories above:
+The four category buckets and their defaults:
 
-1. **Graph search first.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor to see how it's typically extended. Walk the canonical homes for your category — shared components/screens, `usecase/`, `data/remote/dto/`, `domain/model/`, shared copy object, test-tags object, Hilt `@Module` files, navigation-route enum.
-2. **Decide: reuse > extend > mirror > new.** Pick the leftmost that fits. "Mirror" means a new symbol built as a structural sibling — same shell, same primitives, same shape, same tone.
-3. **Attest in the commit body.** One line per new symbol: `reuse: …` / `extend: …` / `mirror: …` / `new: no sibling found — confirmed via [searches]`. An empty attestation on a commit that adds a new symbol = the failure mode this rule exists to catch.
+| Bucket | Examples | Default when sibling exists |
+|---|---|---|
+| Shared primitives | UI primitives, UseCases, DTOs, copy/tokens/test-tags, error mappers, formatters, test fakes | **REUSE / EXTEND** |
+| Pattern-instance composables | sheets / dialogs / cards built FROM the primitives | **MIRROR** (new instance, same shell + primitives) |
+| Per-destination units | `*Route`, `*Screen`, `*ViewModel`, per-VM sealed UI states | **NEW per route** + mirror structure only |
+| First-of-its-kind | no precedent in the codebase | **NEW** (you're setting precedent) |
+
+Per slice that introduces a symbol:
+
+1. **Graph search first.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor. Walk the canonical homes for your category.
+2. **Identify the bucket.** The bucket determines the default. Two failure modes are equally bad: inventing where you should have reused (shared-primitive bucket); reusing where you should have created new (per-destination bucket — sharing a VM across destinations, cloning a sealed UiState across unrelated VMs, hosting one screen's logic in another's composable).
+3. **Apply the default UNLESS you have a stated reason to deviate.** Deviations are legitimate (Activity-scoped VM, cross-cutting sealed-state base) but must be stated, not silent.
+4. **Attest in the commit body.** One line per new symbol naming the bucket default and your choice. Empty attestation = the failure mode this rule exists to catch.
 
 ```
-REUSE CHECK (UI):
+REUSE CHECK (shared primitive — default REUSE/EXTEND):
 ✗ New ModalBottomSheet with custom Column + AppPrimaryButton pair
 ✓ Shared BottomSheet shell + BottomSheetPrimaryAction + BottomSheetDeferredAction
 
-REUSE CHECK (state holder):
 ✗ New polling UseCase re-implementing backoff + correlation-id threading
-✓ Extend existing polling UseCase shape, or factor the policy into a shared helper
+✓ Extend the existing polling UseCase, or factor the policy into a shared helper
 
-REUSE CHECK (constants):
 ✗ New "Not now" string literal in a fresh copy object
 ✓ SharedCopy.NOT_NOW
 
-REUSE CHECK (DTO):
 ✗ New domain-specific ErrorResponseDto with a slightly different field name
-✓ Reuse the existing ErrorResponseDto; add the variant via a sealed mapper if needed
+✓ Reuse the existing ErrorResponseDto; add the variant via the sealed mapper
 
-REUSE CHECK (test scaffolding):
 ✗ New FakePdfRepository hand-rolling state when FakeQuizRepository already has the pattern
 ✓ Mirror FakeQuizRepository's structure, or extend its base
+
+REUSE CHECK (pattern-instance composable — default MIRROR):
+✗ New rewarded-unlock sheet that looks nothing like the existing DailyLimitSheet
+✓ New sheet built as a structural sibling: same shell + primitives + icon-card header
+
+REUSE CHECK (per-destination unit — default NEW per route + mirror structure):
+✗ One ViewModel shared across two unrelated nav destinations (silent, no justification)
+✓ Two new VMs per destination, mirrored layering. Deviation only with explicit
+  "Activity-scoped because X" rationale.
+
+✗ New screen composable hosting another screen's logic inline
+✓ New screen; navigate to the other route; mirror the existing screen's scaffold + VM injection
+
+✗ Sealed UiState cloned identically across multiple unrelated VMs
+✓ Share a base only if the concept is cross-cutting; otherwise keep per-VM types diverged
 ```
 
-If no sibling exists, that's a signal to ASK before inventing. The cost of inventing in parallel is a user-caught rewrite + a wasted intermediate commit. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
+If no sibling exists in the shared-primitive bucket, that's a signal to ASK before inventing. If you're in the per-destination bucket and NEW is the default, no question needed — just attest the bucket and the mirroring decision. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
 
 ### Rule 0.5: Scope Discipline
 
