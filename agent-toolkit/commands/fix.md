@@ -3,7 +3,7 @@ description: Apply a minimal targeted fix to a specific finding using the projec
 argument-hint: <finding description, ideally with file:line and the concern>
 ---
 
-You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline — the **same** protocol the headless `claude-fixer.yaml` pipeline applies to pull-panda comments, but interactive. This command body does not rely on you reading the canonical `.github/agent-prompts/fixer.md` — its protocol is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 2.)
+You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline — the **same** protocol the headless `claude-fixer.yaml` pipeline applies to pull-panda comments, but driven interactively by the user. This command body does not rely on you reading the canonical `.github/agent-prompts/fixer.md` — its protocol is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 2.)
 
 **Finding:**
 
@@ -141,14 +141,14 @@ If any box is unchecked, do not stop.
 
 # Hard rules (adapted for interactive mode)
 
-- **Don't switch branches.** Stay where you are; the user picked it.
-- **Don't push or open a PR.** Stop after Phase 7; user pushes.
+- **Branch off `main` at task start, or extend the PR's branch if the finding came from a PR review comment.** Confirm with the user which one. Stay-on-main is the failure mode.
+- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated.
 - **Never edit files under `.github/`** — CODEOWNERS gates anyway.
-- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of main. Don't propose them either.
+- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you can't fix the finding** (missing context, unclear requirement, architectural mismatch), surface the blocker explicitly. Don't fake-finish or pretend ambiguity is resolved.
 
 ---
 
 # Stop condition
 
-You're done when Phase 5's checklist is fully satisfied AND you've told the user what changed + what's left (typically: push the commit).
+You're done when the fix-protocol checklist is satisfied, the PR is open (or updated) with the URL returned to the user, and you've summarised in one or two sentences what changed and what's left.

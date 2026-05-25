@@ -3,7 +3,7 @@ description: Implement a task using the project's full implementer workflow — 
 argument-hint: <task description, e.g. "add swipe-to-dismiss to result screen">
 ---
 
-You are taking on an ad-hoc implementation task using this repo's full implementer discipline — the **same** rules the headless `claude-implementer.yaml` pipeline applies, but in interactive mode on the user's current branch. This command body does not rely on you reading the canonical `.github/agent-prompts/implementer.md` — its workflow is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 1.)
+You are taking on an interactive implementation task using this repo's full implementer discipline — the **same** rules the headless `claude-implementer.yaml` pipeline applies, but driven by the user in real time. This command body does not rely on you reading the canonical `.github/agent-prompts/implementer.md` — its workflow is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 1.)
 
 **Task:**
 
@@ -146,15 +146,15 @@ If any box is unchecked, do not stop. Address it.
 
 Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
-- **Don't switch branches automatically.** The user picked the current branch deliberately. If main is checked out and the task is non-trivial, ASK before creating a feature branch.
-- **Don't push or open a PR.** Stop when Phase 7 is satisfied. Let the user push.
+- **Branch off `main` at task start.** If `main` is checked out, `git switch -c feat/issue-<N>-<slug>` (or `fix/<slug>` for a defect) before any commit. If on another non-default branch, ask before extending — it may belong to another task. Stay-on-main is the failure mode.
+- **Push + open a PR at the end of Phase 7.** `git push -u origin <branch>` then `gh pr create --base main`. PR body includes the Phase 4 decision log. Return the PR URL to the user.
 - **Never edit existing tests** under `**/test/`, `**/androidTest/`, `*Test.kt` unless the task explicitly asks. Adding new tests is encouraged.
 - **Never edit files under `.github/`** — CODEOWNERS gates this anyway.
-- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of main. Don't propose them either.
+- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you genuinely cannot make progress**, surface the blocker explicitly to the user. Don't fake-finish.
 
 ---
 
 # Stop condition
 
-You're done when Phase 7's checklist is fully satisfied AND you've stated to the user what was done + what's left for them (typically: review diff, push, open PR).
+You're done when Phase 7's checklist is satisfied, the PR is open against `main` (URL returned to the user), and you've summarised in one or two sentences what changed and what's left.
