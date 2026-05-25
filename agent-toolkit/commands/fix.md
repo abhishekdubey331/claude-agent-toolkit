@@ -11,35 +11,6 @@ $ARGUMENTS
 
 ---
 
-# Setup — Branch + PR (do this FIRST, before any phase below)
-
-Most repos that use this command ship via PRs. **Every `/fix` task lands on a feature branch, never on `main` directly,** and ends with a PR opened against `main`. Two non-skippable bookends:
-
-## At the start — create the fix branch
-
-1. `git symbolic-ref --short HEAD` — check current branch.
-2. **If on `main`** (or any protected default): create a branch derived from the finding.
-   - GitHub issue / PR comment id known → `fix/issue-<N>-<short-slug>`
-   - Otherwise → `fix/<short-slug>` from the finding wording
-
-   ```bash
-   git switch -c fix/issue-<N>-<short-slug>
-   ```
-3. **If already addressing a PR's review comments** (the most common `/fix` case): you usually want to land the fix as a follow-up commit on that PR's branch, not a new branch. Confirm with the user which branch the fix belongs on before committing.
-
-**Do NOT skip this.** Silent stay-on-main is the failure mode. If branch creation is denied by tooling/permissions, surface the blocker and stop.
-
-## At the end — push + open or update the PR
-
-After Phase 7's checklist is satisfied:
-
-- **New branch / new PR:** `git push -u origin <branch-name>` then `gh pr create --base main --title "<conventional-commit subject>" --body "<body>"`.
-- **Existing PR (follow-up commit):** `git push` — the commit appears on the open PR. Tell the user which PR was updated.
-
-Return the PR URL either way. **The task is not done until the user has a PR URL to look at.**
-
----
-
 # Phase 0 — Mandatory reads (do not skip)
 
 Before any code change:
@@ -170,8 +141,8 @@ If any box is unchecked, do not stop.
 
 # Hard rules (adapted for interactive mode)
 
-- **Create a branch (or extend the PR's branch) at task start.** See "Setup — Branch + PR" at the top. If `main` is checked out, branch first. If the finding came from a review comment on an open PR, confirm with the user that you should add the fix to that PR's branch. Silent stay-on-main is the failure mode.
-- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated. Returning without a PR URL is a failure.
+- **Branch off `main` at task start, or extend the PR's branch if the finding came from a PR review comment.** Confirm with the user which one. Stay-on-main is the failure mode.
+- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated.
 - **Never edit files under `.github/`** — CODEOWNERS gates anyway.
 - **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you can't fix the finding** (missing context, unclear requirement, architectural mismatch), surface the blocker explicitly. Don't fake-finish or pretend ambiguity is resolved.
@@ -180,10 +151,4 @@ If any box is unchecked, do not stop.
 
 # Stop condition
 
-You're done when **all three** hold:
-
-1. The fix-protocol checklist is fully satisfied.
-2. The branch is pushed and a PR is open (or updated) — URL returned to the user.
-3. You've summarised in one or two sentences what changed and what's left (typically: re-review, merge).
-
-Stopping after the commit without a PR URL is a workflow failure.
+You're done when the fix-protocol checklist is satisfied, the PR is open (or updated) with the URL returned to the user, and you've summarised in one or two sentences what changed and what's left.
