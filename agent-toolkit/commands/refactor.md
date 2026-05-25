@@ -11,6 +11,34 @@ $ARGUMENTS
 
 ---
 
+# Setup — Branch + PR (do this FIRST, before any phase below)
+
+Most repos that use this command ship via PRs. **Every `/refactor` task lands on a feature branch, never on `main` directly,** and ends with a PR opened against `main`. Two non-skippable bookends:
+
+## At the start — create the refactor branch
+
+1. `git symbolic-ref --short HEAD` — check current branch.
+2. **If on `main`** (or any protected default): create a `refactor/<short-slug>` branch.
+   ```bash
+   git switch -c refactor/<short-slug>
+   ```
+3. **If already on a non-default branch**: confirm with the user before extending it — refactor commits often need to land standalone for clean review, so an unrelated feature branch is usually the wrong host.
+
+Silent stay-on-main is the failure mode. If branch creation is denied, surface the blocker and stop.
+
+## At the end — push + open the PR
+
+After Phase 6's checklist is satisfied:
+
+```bash
+git push -u origin refactor/<short-slug>
+gh pr create --base main --title "refactor(<scope>): <one-line>" --body "<body — see Phase 5 plan + tier classification>"
+```
+
+Return the PR URL to the user. **The task is not done until the PR exists.**
+
+---
+
 # Phase 0 — Mandatory reads
 
 1. **`CLAUDE.md`** — sections 2 (Simplicity First), 3 (Surgical Changes), 5 (Bug-Fix Discipline). §3 is load-bearing — don't expand the diff beyond what the refactor requires.
@@ -125,8 +153,8 @@ If any box is unchecked, do not stop.
 # Hard rules (refactor-specific)
 
 - **Behavior must not change.** Anything that changes behavior belongs in a separate `feat:` or `fix:` commit. Two Hats.
-- **Don't switch branches.** Stay where the user put you.
-- **Don't push or open a PR.** Stop after Phase 6; user pushes.
+- **Create a refactor branch off `main` at task start.** See "Setup — Branch + PR" at the top. If `main` is checked out, branch first. Silent stay-on-main is the failure mode.
+- **Push + open a PR at the end of Phase 6.** Use `gh pr create --base main`. The PR body must include the tier classification and refactor plan. Returning to the user without a PR URL is a failure.
 - **Never edit existing tests** unless characterization tests are explicitly part of Phase 2's prep. Adding new tests during the refactor is fine.
 - **Never delete code older than the project's history can explain.** Chesterton's Fence — if you can't say why it was put there, leave it.
 - **No Big Rewrite.** Strangler / Branch by Abstraction always wins. If the plan starts to look like "rewrite this module from scratch", STOP and reclassify as T3 with the user.
@@ -135,4 +163,10 @@ If any box is unchecked, do not stop.
 
 # Stop condition
 
-Phase 6 checklist fully satisfied AND you've told the user: tier, commits made, current state (tests green / coverage maintained / next step).
+You're done when **all three** hold:
+
+1. Phase 6 checklist is fully satisfied.
+2. The branch is pushed and a PR is open against `main` (URL returned to the user), with the tier classification and refactor plan in the PR body.
+3. You've summarised in one or two sentences: tier, commits made, current state (tests green / coverage maintained / next step).
+
+Stopping after the last commit without a PR is a workflow failure.

@@ -3,11 +3,40 @@ description: Apply a minimal targeted fix to a specific finding using the projec
 argument-hint: <finding description, ideally with file:line and the concern>
 ---
 
-You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline — the **same** protocol the headless `claude-fixer.yaml` pipeline applies to pull-panda comments, but interactive. This command body does not rely on you reading the canonical `.github/agent-prompts/fixer.md` — its protocol is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 2.)
+You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline — the **same** protocol the headless `claude-fixer.yaml` pipeline applies to pull-panda comments, but driven interactively by the user. This command body does not rely on you reading the canonical `.github/agent-prompts/fixer.md` — its protocol is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 2.)
 
 **Finding:**
 
 $ARGUMENTS
+
+---
+
+# Setup — Branch + PR (do this FIRST, before any phase below)
+
+Most repos that use this command ship via PRs. **Every `/fix` task lands on a feature branch, never on `main` directly,** and ends with a PR opened against `main`. Two non-skippable bookends:
+
+## At the start — create the fix branch
+
+1. `git symbolic-ref --short HEAD` — check current branch.
+2. **If on `main`** (or any protected default): create a branch derived from the finding.
+   - GitHub issue / PR comment id known → `fix/issue-<N>-<short-slug>`
+   - Otherwise → `fix/<short-slug>` from the finding wording
+
+   ```bash
+   git switch -c fix/issue-<N>-<short-slug>
+   ```
+3. **If already addressing a PR's review comments** (the most common `/fix` case): you usually want to land the fix as a follow-up commit on that PR's branch, not a new branch. Confirm with the user which branch the fix belongs on before committing.
+
+**Do NOT skip this.** Silent stay-on-main is the failure mode. If branch creation is denied by tooling/permissions, surface the blocker and stop.
+
+## At the end — push + open or update the PR
+
+After Phase 7's checklist is satisfied:
+
+- **New branch / new PR:** `git push -u origin <branch-name>` then `gh pr create --base main --title "<conventional-commit subject>" --body "<body>"`.
+- **Existing PR (follow-up commit):** `git push` — the commit appears on the open PR. Tell the user which PR was updated.
+
+Return the PR URL either way. **The task is not done until the user has a PR URL to look at.**
 
 ---
 
@@ -141,14 +170,20 @@ If any box is unchecked, do not stop.
 
 # Hard rules (adapted for interactive mode)
 
-- **Don't switch branches.** Stay where you are; the user picked it.
-- **Don't push or open a PR.** Stop after Phase 7; user pushes.
+- **Create a branch (or extend the PR's branch) at task start.** See "Setup — Branch + PR" at the top. If `main` is checked out, branch first. If the finding came from a review comment on an open PR, confirm with the user that you should add the fix to that PR's branch. Silent stay-on-main is the failure mode.
+- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated. Returning without a PR URL is a failure.
 - **Never edit files under `.github/`** — CODEOWNERS gates anyway.
-- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of main. Don't propose them either.
+- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you can't fix the finding** (missing context, unclear requirement, architectural mismatch), surface the blocker explicitly. Don't fake-finish or pretend ambiguity is resolved.
 
 ---
 
 # Stop condition
 
-You're done when Phase 5's checklist is fully satisfied AND you've told the user what changed + what's left (typically: push the commit).
+You're done when **all three** hold:
+
+1. The fix-protocol checklist is fully satisfied.
+2. The branch is pushed and a PR is open (or updated) — URL returned to the user.
+3. You've summarised in one or two sentences what changed and what's left (typically: re-review, merge).
+
+Stopping after the commit without a PR URL is a workflow failure.

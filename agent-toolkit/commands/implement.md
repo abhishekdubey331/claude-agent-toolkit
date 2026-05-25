@@ -3,11 +3,49 @@ description: Implement a task using the project's full implementer workflow — 
 argument-hint: <task description, e.g. "add swipe-to-dismiss to result screen">
 ---
 
-You are taking on an ad-hoc implementation task using this repo's full implementer discipline — the **same** rules the headless `claude-implementer.yaml` pipeline applies, but in interactive mode on the user's current branch. This command body does not rely on you reading the canonical `.github/agent-prompts/implementer.md` — its workflow is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 1.)
+You are taking on an interactive implementation task using this repo's full implementer discipline — the **same** rules the headless `claude-implementer.yaml` pipeline applies, but driven by the user in real time. This command body does not rely on you reading the canonical `.github/agent-prompts/implementer.md` — its workflow is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 1.)
 
 **Task:**
 
 $ARGUMENTS
+
+---
+
+# Setup — Branch + PR (do this FIRST, before any phase below)
+
+Most repos that use this command ship via PRs. **Every `/implement` task lands on a feature branch, never on `main` directly,** and ends with a PR opened against `main`. Two non-skippable bookends to the phase work:
+
+## At the start — create the feature branch
+
+1. **Check current branch.**
+   ```bash
+   git symbolic-ref --short HEAD
+   ```
+2. **If on `main`** (or any protected default like `master` / `develop`): create and switch to a feature branch derived from the task. Naming:
+   - GitHub issue number known → `feat/issue-<N>-<short-slug>` (e.g. `feat/issue-358-photo-ocr`)
+   - No issue number → `feat/<short-slug>` from the task wording
+   - Defect / bug → `fix/<short-slug>` (or `fix/issue-<N>-<slug>`)
+
+   ```bash
+   git switch -c feat/issue-<N>-<short-slug>
+   ```
+3. **If already on a non-default branch**: confirm with the user that you should extend it ("Continue on `<current-branch>` or create a new branch off main?"). Do not silently extend an arbitrary branch — it may belong to another task.
+
+**Do NOT skip this.** Committing directly to `main` is a workflow failure even if the code is correct — it forces the user to manually rewrite history afterward. Silent branch creation is the right default; silent stay-on-main is the failure mode. If branch creation is denied by tooling/permissions, surface the blocker explicitly and stop — don't fall back to committing on main. If the project's `main` is not protected and the user explicitly wants to commit there (e.g. a solo prototype), they will tell you; otherwise branch.
+
+## At the end — push + open the PR
+
+After Phase 7's checklist is satisfied:
+
+```bash
+git push -u origin <branch-name>
+gh pr create --base main --title "<conventional-commit subject>" --body "$(cat <<'EOF'
+<PR body — see template under Phase 4 "Decision log" + Phase 7 "Stop condition">
+EOF
+)"
+```
+
+Return the PR URL to the user. **The task is not done until the PR exists.** Do not stop after the last commit; the user expects the PR.
 
 ---
 
@@ -146,15 +184,21 @@ If any box is unchecked, do not stop. Address it.
 
 Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
-- **Don't switch branches automatically.** The user picked the current branch deliberately. If main is checked out and the task is non-trivial, ASK before creating a feature branch.
-- **Don't push or open a PR.** Stop when Phase 7 is satisfied. Let the user push.
+- **Create a feature branch off `main` at task start.** See "Setup — Branch + PR" at the top. If `main` is checked out, branch first; if another non-default branch is checked out, confirm with the user before extending it. Silent stay-on-main is the failure mode.
+- **Push the branch and open a PR at the end of Phase 7.** Use `gh pr create --base main`. The PR body must include the decision log from Phase 4. Returning to the user without a PR URL is a failure.
 - **Never edit existing tests** under `**/test/`, `**/androidTest/`, `*Test.kt` unless the task explicitly asks. Adding new tests is encouraged.
 - **Never edit files under `.github/`** — CODEOWNERS gates this anyway.
-- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of main. Don't propose them either.
+- **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either. Moving commits off `main` after the fact uses `git branch -f main origin/main` from another branch, never `reset --hard` while on main.
 - **If you genuinely cannot make progress**, surface the blocker explicitly to the user. Don't fake-finish.
 
 ---
 
 # Stop condition
 
-You're done when Phase 7's checklist is fully satisfied AND you've stated to the user what was done + what's left for them (typically: review diff, push, open PR).
+You're done when **all three** hold:
+
+1. Phase 7's checklist is fully satisfied.
+2. The branch is pushed and a PR is open against `main` (URL returned to the user).
+3. You've summarised — in one or two sentences — what changed and what's left for the user (typically: review the PR, request reviewers, merge).
+
+Stopping after the last commit without a PR is a workflow failure even if the code is perfect.
