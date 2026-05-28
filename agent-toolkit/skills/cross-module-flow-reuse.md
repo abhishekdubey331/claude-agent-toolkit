@@ -90,6 +90,7 @@ Whichever path you took:
 
 ## Pairs with other skills
 
+- `reuse-before-you-build.md` — the symbol-level sibling of this skill. Cheap default that runs on every new symbol (composable, ViewModel, DTO, copy constant, test fake). This skill takes over when the invention is a multi-step flow at 20+ lines and the copy/extract/delegate choice needs deliberate weighing.
 - `refactoring-strategy.md` — when the "extract" choice is real, treat it as T2 cross-module work (impact radius, parallel change).
 - `code-simplification.md` — the new impl's simplify pass should preserve the divergence justifications, not delete them as "obvious comments".
 - `doubt-driven-development.md` — the copy/extract/delegate decision is exactly the kind of non-trivial decision that should pass the adversarial-subagent check.

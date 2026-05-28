@@ -26,6 +26,25 @@ These two reads are non-negotiable. If you've already read them in this session 
 
 Decide which skills your task needs based on its shape. Read each matching skill **now, before writing code** — not "as needed" later.
 
+## Reuse scan — MANDATORY before introducing any new symbol
+
+CLAUDE.md §2 ("Reuse Before You Build", if your repo has it) is a hard gate. The principle is **scan first**, not "reuse everything". The CORRECT action depends on the category — some want reuse, some want mirror, some want new-per-route-with-mirrored-structure. Full skill: `.claude/skills/reuse-before-you-build.md` (per-category table + four-step gate). Pair with `.claude/skills/cross-module-flow-reuse.md` when the invention is a multi-step flow at 20+ lines.
+
+Quick mental model — the four buckets and their defaults:
+
+- **Shared primitives** (UI primitives, UseCases, DTOs, copy / tokens / test-tags, error mappers, test fakes) → **REUSE / EXTEND**. Re-implementing is the failure.
+- **Pattern-instance composables** (sheets / dialogs / cards built FROM the primitives) → **MIRROR** for a sibling use case. New instance, same shell + primitives + header pattern.
+- **Per-destination units** (`*Route`, `*Screen`, `*ViewModel`, per-VM sealed UI states) → **NEW per route/destination**, mirror only the structure (layering, conventions). Sharing one across unrelated destinations couples lifecycles — only with a stated Activity-scoped exception.
+- **Genuinely first-of-its-kind** → NEW, but only after the search confirms it.
+
+Procedure:
+1. **Graph search.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor. Walk canonical homes for your category (shared components / screens, `usecase/`, `data/remote/dto/`, `domain/model/`, shared copy object, test-tags object, Hilt `@Module` files, navigation-route enum).
+2. **Identify the bucket** (one of the four above). The bucket determines the default.
+3. **Apply the default UNLESS you have a stated reason to deviate.** Deviations are legitimate (Activity-scoped VM, cross-cutting sealed-state base) — but they must be stated, not silent.
+4. **Attest before Phase 2.** One line per new symbol: `reuse: …` / `extend: …` / `mirror: … (category default = mirror)` / `new (category default): …` / `new (deviation): … — justified because …` / `new: no sibling found — searched X, Y, Z`.
+
+If you cannot find a sibling in the shared-primitive bucket, that's a signal to ASK the user (Phase 1 ends with a user check anyway), not to invent. If you're in the per-destination bucket and NEW is the default, no question needed — just attest the bucket and the mirroring decision.
+
 ## Always-applicable Addy Osmani skills (read at least one)
 
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
@@ -55,7 +74,16 @@ REVIEW.md grades 🔴 against deviations from these. If the diff touches even on
 
 After Phase 1, state to the user (briefly): which skills you loaded, and what your plan is. **Ask clarifying questions if the task is ambiguous.** The headless pipeline can't; you can.
 
-**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my plan keeps state out of @Composable bodies`). If you skip a MANDATORY skill, say so explicitly with a one-line reason. Silent skips are the failure mode this gate exists to catch.
+**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `compose-state-authoring: loaded — confirms my plan keeps state out of @Composable bodies`) AND **one line per new symbol for the reuse scan** — each line states the bucket default and your choice. Examples spanning all four buckets:
+
+- `reuse: SharedCopy.NOT_NOW` (shared primitive: default = reuse)
+- `mirror: PdfRewardedUnlockSheet mirrors DailyLimitSheet — same shell + sheet-action primitives + icon-card header` (pattern-instance composable: default = mirror)
+- `extend: existing PollingUseCase — new case slots in via PollingPolicy enum` (UseCase: default = reuse/extend)
+- `new (category default): PdfGenerateScreen is a new screen per route; mirrors CreateRoute's VM injection + scaffold layering` (per-destination unit: default = new + mirror structure)
+- `new (deviation): PdfGenerateViewModel hosted Activity-scoped inside CreateRoute to survive the conditional re-render and preserve in-flight state — stated exception to the per-destination default`
+- `new: no sibling for PdfDocumentValidator — searched *Validator + *Pdf*` (first-of-its-kind)
+
+If you skip a MANDATORY skill, miss a category, OR pick the wrong action for the category (e.g. reusing a VM across destinations), say so explicitly with a one-line reason. Silent skips AND silent miscategorization are the failure modes this gate exists to catch.
 
 **AC-vs-environment check.** If the task's acceptance criteria require verification the agent can't run (emulator instrumentation, real ad SDK, paid API, multi-device, physical sensors), surface it explicitly here. Offer the user one of:
 1. **Narrow scope** to what's testable locally; ship the gap as a follow-up.
@@ -134,6 +162,7 @@ Before saying "done", confirm each of these:
 - [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
 - [ ] **Decision log in PR body is non-empty if any non-trivial decision was made**, with subagent reconciliation OR one-line justification per entry. An empty log on a multi-decision PR is the failure mode (Phase 4 step 4)
 - [ ] If any `@Composable` was touched, the relevant compose-* skill was read FIRST (not after), and the one-liner attesting to that read is in your Phase 1 self-attestation
+- [ ] **Reuse scan (`reuse-before-you-build.md`) was completed for every new symbol** with the correct category default applied. A `reuse: …` / `extend: …` / `mirror: …` / `new (category default): …` / `new (deviation): … — justified` line per new symbol exists in the Phase 1 attestation. No category mistakes either way: no parallel re-implementation of a shared primitive (raw `ModalBottomSheet` vs the shared shell, ad-hoc polling vs an existing polling `UseCase`, redefined copy vs the shared copy object); AND no inappropriate cross-destination sharing (one `ViewModel` across unrelated routes, one VM's `sealed UiState` cloned into another VM, one screen composable hosting another's logic inline). Deviations from the bucket default are stated explicitly, not silent.
 - [ ] Every changed line traces directly to the task (no scope creep)
 - [ ] Commits use Conventional Commits format, one logical change each
 - [ ] No deleted or weakened tests; no `@Ignore`/`@Disabled`/`@Suppress` added without commit-body justification (CLAUDE.md §5)
