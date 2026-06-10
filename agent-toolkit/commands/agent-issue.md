@@ -138,9 +138,12 @@ Based on the user's selection in Phase 4:
 
 **`File + fire pipeline`** — pipeline triggers:
 
+Pass the title through a quoted variable — never inline it into the command — so a title containing `"`, `` ` ``, or `$(…)` can't break or inject the shell:
+
 ```bash
+TITLE='<title>'   # single-quote the literal; escape any embedded ' as '\''
 gh issue create \
-  --title "<title>" \
+  --title "$TITLE" \
   --body "$(cat <<'EOF'
 <the issue body>
 EOF
@@ -149,7 +152,7 @@ EOF
   $(for L in $SUGGESTED_LABELS; do printf -- '--label %s ' "$L"; done)
 ```
 
-Print the resulting issue URL. Tell the user the pipeline will pick it up; expected wall-clock to PR is 5–15 minutes depending on scope.
+`$SUGGESTED_LABELS` is intentionally left unquoted so each label becomes a separate `--label`; keep labels to simple `[a-z0-9-]` tokens. Print the resulting issue URL. Tell the user the pipeline will pick it up; expected wall-clock to PR is 5–15 minutes depending on scope.
 
 **`File as draft`** — no pipeline trigger:
 

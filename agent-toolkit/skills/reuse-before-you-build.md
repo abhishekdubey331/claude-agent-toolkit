@@ -163,6 +163,6 @@ Record any deliberate divergence in the PR/commit body (e.g. *"copy-with-simplif
 
 ## Pairs with other skills
 
-- **`refactoring-strategy.md`** — when "extract" is the right choice but it requires modifying the original symbol, treat it as cross-module refactoring (impact radius, parallel change).
-- **`code-simplification.md`** — the simplify pass should not delete the `reuse: …` / `mirror: …` rationale as an "obvious comment"; it's load-bearing.
-- **`doubt-driven-development.md`** — if the decision is non-trivial (mirror vs new on a high-stakes symbol, or copy vs extract on a flow), the adversarial-subagent check applies.
+- **`refactoring-strategy`** — when "extract" is the right choice but it requires modifying the original symbol, treat it as cross-module refactoring (impact radius, parallel change).
+- **`code-simplification`** — the simplify pass should not delete the `reuse: …` / `mirror: …` rationale as an "obvious comment"; it's load-bearing.
+- **`doubt-driven-development`** — if the decision is non-trivial (mirror vs new on a high-stakes symbol, or copy vs extract on a flow), the adversarial-subagent check applies.

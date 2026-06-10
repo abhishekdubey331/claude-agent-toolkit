@@ -11,8 +11,8 @@ description: Strategic refactoring playbook for AI agents. Use when restructurin
 
 This skill is **strategy**. Pair with:
 
-- **`refactor-safely.md`** (if present) — the **mechanics** layer (deterministic refactoring tooling: language-server rename/move-file, `ast-grep`, codemods, or any graph-aware / find-references code-search your stack provides).
-- **`code-simplification.md`** — the **cleanup** layer (clarity-only post-refactor pass; no behavior change).
+- **`refactor-safely`** (if present) — the **mechanics** layer (deterministic refactoring tooling: language-server rename/move-file, `ast-grep`, codemods, or any graph-aware / find-references code-search your stack provides).
+- **`code-simplification`** — the **cleanup** layer (clarity-only post-refactor pass; no behavior change).
 
 Canonical sequence: **Strategy (this skill) → Mechanics → Cleanup.**
 
