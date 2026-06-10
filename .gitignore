@@ -3,3 +3,6 @@
 .idea/
 .vscode/
 node_modules/
+
+# Claude Code / Conductor runtime artifacts (not source)
+.claude/scheduled_tasks.lock

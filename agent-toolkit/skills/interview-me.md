@@ -9,7 +9,7 @@ description: Extracts what the user actually wants instead of what they think th
 
 ## Adaptation note for this repo
 
-The skill content below is unmodified from upstream. We use it in this repo as the pre-flight for the `agent`-labeled pipeline — invoked by the `/agent-issue` slash command to close the "vague issue → wasted implementer turns" gap before any worktree spins up. See [`.claude/commands/agent-issue.md`](../commands/agent-issue.md) for how it composes with `gh issue create`.
+The skill content below is adapted from upstream (dangling cross-references to skills not bundled here removed). We use it in this repo as the pre-flight for the `agent`-labeled pipeline — invoked by the `/agent-issue` slash command to close the "vague issue → wasted implementer turns" gap before any worktree spins up. See [`.claude/commands/agent-issue.md`](../commands/agent-issue.md) for how it composes with `gh issue create`.
 
 ## Overview
 
@@ -17,7 +17,7 @@ What people ask for and what they actually want are different things. They ask f
 
 The cheapest moment to find this gap is before any plan, spec, or code exists. Once you've started building, switching costs are real, and the user will rationalize the wrong thing into a "good enough" thing. The misfit gets locked in.
 
-This skill closes the gap before it costs anything. The other Define-phase skills assume you already know roughly what you want: `idea-refine` generates variations from an idea, `spec-driven-development` writes the requirements down, `doubt-driven-development` stress-tests a plan after you've drafted one. Interview-me is the part before all of those, where you ask one question at a time, with your best guess attached, until you can predict what the user is going to say before they say it.
+This skill closes the gap before it costs anything. `doubt-driven-development` stress-tests a plan after you've drafted one. Interview-me is the part before that, where you ask one question at a time, with your best guess attached, until you can predict what the user is going to say before they say it.
 
 ## When to Use
 
@@ -185,9 +185,7 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 
 ## Interaction with Other Skills
 
-- **`idea-refine`**: downstream. If the confirmed intent is "I want X but I don't know how to scope it," hand off to `idea-refine` to generate variations against the now-explicit intent.
-- **`spec-driven-development`**: downstream. If the confirmed intent is concrete ("I want X for Y users with Z success criteria"), hand off to `spec-driven-development` to write it down.
-- **`planning-and-task-breakdown`**: two hops downstream of this skill (after the spec).
+- **`planning-and-task-breakdown`**: downstream. Once intent is confirmed, planning-and-task-breakdown converts it into an ordered task list.
 - **`doubt-driven-development`**: opposite end of the timeline. Interview-me is pre-decision intent extraction; doubt-driven is post-decision artifact review. Both catch divergence, but at different moments.
 - **`source-driven-development`**: orthogonal. Interview-me clarifies what the user wants; SDD verifies framework facts. They don't compete.
 
@@ -228,4 +226,4 @@ After applying interview-me:
 - [ ] A concrete restate (Outcome / User / Why now / Success / Constraint / Out of scope) was written back to the user
 - [ ] The user confirmed the restate with an explicit yes (not "whatever you think," not "sounds good," not silence)
 - [ ] At the stop point, the agent could predict reactions to the next three questions it would ask
-- [ ] Any handoff to a downstream skill (`idea-refine`, `spec-driven-development`) was framed in terms of the confirmed intent, not the original underspecified ask
+- [ ] Any handoff to a downstream skill was framed in terms of the confirmed intent, not the original underspecified ask

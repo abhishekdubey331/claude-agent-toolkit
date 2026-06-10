@@ -117,7 +117,9 @@ The commands above are entry points. The pack includes 18 skills total — 16 li
 
 ## Automated PR-review pipeline
 
-A headless, CI-friendly reviewer wired as two `claude -p` stages plus a deterministic renderer. It produces a single GitHub review and **never posts from a model** — a CI step posts the payload the renderer writes.
+A headless, CI-friendly reviewer built from **two `claude -p` stages + a deterministic renderer**. It produces a single GitHub review and **never posts from a model** — your CI step posts the payload the renderer writes.
+
+> **What ships in this repo:** the two skills (`code-review-bot`, `code-review-refuter`) and the renderer (`render-review.mjs`) — the building blocks. **Bring your own CI:** you wire the two `claude -p` invocations and the final post-the-payload step into your own workflow (e.g. GitHub Actions); this repo does not include that glue. The renderer's [`scripts/README.md`](agent-toolkit/scripts/README.md) documents its env inputs/outputs.
 
 | Stage | Component | What it does |
 |-------|-----------|--------------|

@@ -13,7 +13,7 @@ $ARGUMENTS
 
 # Phase 1 — Run the interview-me protocol
 
-Read **`.claude/skills/interview-me.md`** in full now. Then execute its protocol on the rough task above. Drive the interview to ≥95% intent confidence.
+Load the **`interview-me`** skill in full now. Then execute its protocol on the rough task above. Drive the interview to ≥95% intent confidence.
 
 ## How to ask questions: prefer `AskUserQuestion`, fall back to chat
 
@@ -167,7 +167,7 @@ Throw away. Confirm to the user.
 
 # Hard rules (across all phases)
 
-- **Read `interview-me.md` before Phase 1.** The protocol's discipline (anchored questions, confidence numbers, out-of-scope gate) is what makes this useful. If you skip the protocol and just bulk-ask, you'll produce mediocre issues.
+- **Load the `interview-me` skill before Phase 1.** The protocol's discipline (anchored questions, confidence numbers, out-of-scope gate) is what makes this useful. If you skip the protocol and just bulk-ask, you'll produce mediocre issues.
 - **Stay interactive.** Don't fall back to assumptions. If the user gives a one-word answer, ask the follow-up that disambiguates.
 - **Don't file with `agent` label without explicit user "yes" in Phase 4.** That label is the pipeline trigger; firing it by accident burns runner minutes + the post-June-15 Agent SDK credit.
 - **Don't fabricate context.** Run `gh label list` to see real labels. If it's still unclear which area label fits, ask the user which area the change touches.
