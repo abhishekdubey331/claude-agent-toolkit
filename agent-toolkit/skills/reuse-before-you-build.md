@@ -1,6 +1,6 @@
 ---
 name: reuse-before-you-build
-description: Before introducing any new symbol — component, view-model/controller/presenter, use-case/interactor, repository method, value type/DTO, state type, dependency binding, navigation route, copy constant, test tag, design token, error mapper, formatter, test fake/fixture/builder — scan for an existing sibling and apply the CORRECT default for the category (reuse for shared primitives; mirror for pattern-instance components; new-per-feature for controllers/view-models/per-feature state types). Use BEFORE writing the symbol. Pairs with cross-module-flow-reuse.md (which handles multi-step flow deliberation at 20+ lines).
+description: Before introducing any new symbol — component, view-model/controller/presenter, use-case/interactor, repository method, value type/DTO, state type, dependency binding, navigation route, copy constant, test tag, design token, error mapper, formatter, test fake/fixture/builder — scan for an existing sibling and apply the CORRECT default for the category (reuse for shared primitives; mirror for pattern-instance components; new-per-feature for controllers/view-models/per-feature state types). Use BEFORE writing the symbol. Multi-step flows (20+ lines) get the same gate — see the Flow-level escalation section.
 ---
 
 # Reuse before you build
@@ -9,7 +9,7 @@ description: Before introducing any new symbol — component, view-model/control
 
 The principle is **not** "reuse everything you find". Some categories want reuse (shared primitives, copy, use-cases, value types/DTOs). Some want mirroring (a new dialog built as a structural sibling of an existing one). Some want a genuinely new instance per feature (controllers/view-models per feature, screen entry points per route, per-feature state types). Picking the wrong action — reusing where you should have created new, or inventing where you should have reused — both ship the wrong choice for the category.
 
-This skill is the cheap, ubiquitous default — runs every time you reach for a new class, function, constant, type, or component definition. The `cross-module-flow-reuse.md` skill is the expensive sibling — runs when you're about to copy a multi-step flow (claim-then-retry, upload-then-poll, login-then-fetch) at 20+ lines. Most invention happens below that threshold and silently compounds.
+This gate runs every time you reach for a new class, function, constant, type, or component definition. It also covers the expensive case — copying a multi-step flow (claim-then-retry, upload-then-poll, login-then-fetch) at 20+ lines — in the Flow-level escalation section below. Most invention happens below that threshold and silently compounds.
 
 ## When to use
 
@@ -143,9 +143,26 @@ Two failure modes, equally bad:
 | A new symbol meaningfully different from its closest sibling without a stated reason | Reviewers can't tell intentional divergence from accidental — and neither can you in six months |
 | **Silent invention OR silent miscategorization** — no commit-body line, no PR note | The failure modes this skill exists to catch. Both are equally bad: shipping the wrong action for the category |
 
+## Flow-level escalation (multi-step flows, 20+ lines)
+
+When the symbol you're about to write is a **multi-step orchestration** (claim-then-retry, upload-then-poll, login-then-fetch, recovery state machine) and is 20+ lines, the same four-step gate applies — but Step 3's action set expands:
+
+| Action | Pick when | Cost |
+|---|---|---|
+| **Copy with simplifications** | Differences are large (analytics requirements differ, state shapes differ, lifecycles differ) AND importing would cargo-cult unused complexity | Drift risk — record the divergence in the commit body so future readers know it's separate-by-design |
+| **Extract to shared use-case / helper** | Differences are small AND bug fixes should propagate to both surfaces | Up-front refactoring cost; apply the rule of 3 — wait for a third real consumer before extracting |
+| **Delegate to the existing impl** | The other module's public surface already fits with minimal adaptation | Couples the new module to the existing one; only viable if the existing impl is already public-facing |
+
+**Flow-specific anti-patterns:**
+- Re-implementing an existing validate→call→map→handle orchestration inline instead of reusing or delegating.
+- Silent copy (no comment, no PR-body note) — future readers can't tell intentional divergence from accidental drift.
+- Premature extract after only two callers — the wrong abstraction gets locked in; wait for caller #3.
+- "I'll align them in a follow-up PR" — the follow-up doesn't happen; commit to copy-with-rationale now or extract now.
+
+Record any deliberate divergence in the PR/commit body (e.g. *"copy-with-simplifications: mirrors `QuizController.claimRewardedGenerationUnlock` but omits analytics (Phase 5) and pending-request preservation — treat as separate-by-design until a third caller appears"*). Add a one-line cross-link comment at the new impl pointing at the original.
+
 ## Pairs with other skills
 
-- **`cross-module-flow-reuse.md`** — when the invention is a multi-step flow (claim-then-retry, upload-then-poll, recovery state machine) at 20+ lines, escalate to the four-step copy/extract/delegate gate there. This skill is the symbol-level default; that one is the flow-level deliberation.
 - **`refactoring-strategy.md`** — when "extract" is the right choice but it requires modifying the original symbol, treat it as cross-module refactoring (impact radius, parallel change).
 - **`code-simplification.md`** — the simplify pass should not delete the `reuse: …` / `mirror: …` rationale as an "obvious comment"; it's load-bearing.
-- **`doubt-driven-development.md`** — if the decision is non-trivial (mirror vs new on a high-stakes symbol), the adversarial-subagent check applies.
+- **`doubt-driven-development.md`** — if the decision is non-trivial (mirror vs new on a high-stakes symbol, or copy vs extract on a flow), the adversarial-subagent check applies.
