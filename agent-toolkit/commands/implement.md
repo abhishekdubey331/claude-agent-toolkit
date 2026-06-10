@@ -53,7 +53,7 @@ If you cannot find a sibling in the shared-primitive bucket, that's a signal to 
 
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
 - **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if this is a defect with a stack trace, repro, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't ship symptom-patches; this skill is how you avoid that.
-- **`.claude/skills/doubt-driven-development.md`** — REQUIRED before committing any non-trivial decision: new branching logic, cross-module change, irreversible side-effect, thread-safety claim, idempotence claim. Spawn a fresh-context adversarial subagent reviewer and reconcile findings BEFORE relying on the decision. Interactive mode has no pull-request safety net — this skill is the substitute.
+- **`.claude/skills/doubt-driven-development.md`** — OPTIONAL, reserved for genuinely high-stakes calls: an irreversible/destructive side-effect, a hard-to-reverse public-API or schema change, or a concurrency/idempotence guarantee a test can't cover. For those, spawn a fresh-context adversarial reviewer. **Do not** run it on routine commits — a passing test is the cheaper, stronger signal, and per-commit adversarial reviews are the biggest avoidable token cost in this workflow.
 - **`.claude/skills/code-simplification.md`** — applied **before EVERY commit** in Phase 4 (the per-commit mini-pass). Read it now so you don't have to context-switch later.
 
 ## Framework-specific skills
@@ -69,16 +69,7 @@ If your project ships framework-specific skills under `.claude/skills/` (state m
 
 After Phase 1, state to the user (briefly): which skills you loaded, and what your plan is. **Ask clarifying questions if the task is ambiguous.** The headless pipeline can't; you can.
 
-**Self-attestation gate (anti-skip):** "MANDATORY" and "REQUIRED" labels above carry no programmatic enforcement — they rely on you. Before Phase 2, write **one line per applicable skill you loaded** (e.g. `incremental-implementation: loaded — confirms thin vertical slices before first test`) AND **one line per new symbol for the reuse scan** — each line states the bucket default and your choice. Examples spanning all four buckets:
-
-- `reuse: SharedCopy.CANCEL_LABEL` (shared primitive: default = reuse)
-- `mirror: PdfUploadDialog mirrors ImageUploadDialog — same shell + dialog-action primitives + icon-card header` (pattern-instance component: default = mirror)
-- `extend: existing PollingService — new case slots in via PollingPolicy enum` (shared service: default = reuse/extend)
-- `new (category default): PdfGenerateScreen is a new screen per route; mirrors existing screen's controller injection + scaffold layering` (per-feature unit: default = new + mirror structure)
-- `new (deviation): PdfGenerateController hosted at a wider host/session scope inside the parent flow to survive the conditional re-render and preserve in-flight state — stated exception to the per-feature default`
-- `new: no sibling for PdfDocumentValidator — searched *Validator + *Pdf*` (first-of-its-kind)
-
-If you skip a MANDATORY skill, miss a category, OR pick the wrong action for the category (e.g. reusing a controller across unrelated features), say so explicitly with a one-line reason. Silent skips AND silent miscategorization are the failure modes this gate exists to catch.
+**Attestation (keep it terse — a guardrail, not a deliverable).** Before Phase 2, jot **one short line per new symbol** naming its bucket and your choice (`reuse:` / `extend:` / `mirror:` / `new:` — e.g. `new: PdfDocumentValidator — no sibling found, searched *Validator + *Pdf*`), and **one short line for any skill you loaded**. If you skipped a relevant skill or weren't sure of a symbol's bucket, say so in a few words. Don't expand this into paragraphs — its only job is to make a silent skip or miscategorization visible.
 
 **AC-vs-environment check.** If the task's acceptance criteria require verification the agent can't run (device/emulator instrumentation, real external service, paid API, multi-device, physical sensors), surface it explicitly here. Offer the user one of:
 1. **Narrow scope** to what's testable locally; ship the gap as a follow-up.
@@ -122,8 +113,8 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
    - **Comment audit** — apply `.claude/skills/comment-discipline.md` to every comment in this commit's diff. The rules and examples live in that skill — this command does not restate them.
    - Verbose error-handling wrapping framework guarantees
    - **Before deleting state that crosses a system boundary** (server payload field, persisted database column, external-SDK callback id, analytics event property, idempotency key) — pause. Does anything outside this module observe the value? If yes, deletion changes behaviour the local test suite can't see. Keep it or search the boundary first.
-3. **Run the test suite and static-analysis checks for the touched files** — the project's test command must be green; no NEW linter findings on files in this commit's diff; no NEW type-checker findings (if the language has one). Different static-analysis tools catch different classes of problems — run whichever ones the project configures. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
-4. **Doubt-driven check (conditional, anti-skip).** If this commit lands a non-trivial decision (new branching logic, cross-module change, thread-safety/idempotence claim, irreversible side-effect, public API signature change, deleting cross-boundary state), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit. **Maintain a running decision log in the PR body** — for every decision in scope, paste either the subagent's reconciliation OR a one-line justification of why the decision didn't need adversarial review. If your decision log is empty at the end, it's wrong: you almost certainly made decisions and didn't surface them.
+3. **Run the focused test(s) for this commit's change** — the test(s) covering the code you just touched must be green. Don't re-run the whole suite or the linters on every commit; the full suite + static analysis run once in Phase 5. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
+4. **High-stakes decision check (rare).** Only if this commit lands a genuinely high-stakes decision — an irreversible/destructive side-effect, a hard-to-reverse public-API or schema change, or a concurrency/idempotence guarantee no test can cover — pause and apply `.claude/skills/doubt-driven-development.md`, and note the outcome in the commit or PR body. Routine commits skip this entirely; don't manufacture a decision log.
 5. **Commit** — Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`. Subject ≤ 60 chars; body explains the *why* if non-obvious.
 
 **General discipline:**
@@ -155,7 +146,7 @@ Before saying "done", confirm each of these:
 - [ ] The linter / static-analysis check shows no new findings on touched files
 - [ ] The type checker (if applicable) shows no new findings on touched files
 - [ ] **Simplify mini-pass ran before EVERY commit (Phase 4 loop) — tests stayed green each time**
-- [ ] **Decision log in PR body is non-empty if any non-trivial decision was made**, with subagent reconciliation OR one-line justification per entry. An empty log on a multi-decision PR is the failure mode (Phase 4 step 4)
+- [ ] Any genuinely high-stakes decision (irreversible side-effect, hard-to-reverse API/schema change, uncoverable concurrency guarantee) is noted in the PR body. Routine decisions need no log.
 - [ ] If your project ships framework-specific skills (state management, rendering, concurrency, etc.) and this task touched that framework, the relevant skill was read FIRST (not after), and the one-liner attesting to that read is in your Phase 1 self-attestation
 - [ ] **Reuse scan (`reuse-before-you-build.md`) was completed for every new symbol** with the correct category default applied. A `reuse: …` / `extend: …` / `mirror: …` / `new (category default): …` / `new (deviation): … — justified` line per new symbol exists in the Phase 1 attestation. No category mistakes either way: no parallel re-implementation of a shared primitive (e.g. ad-hoc polling when a shared polling service exists, redefined copy when a shared constants object exists); AND no inappropriate cross-feature sharing (one controller across unrelated features, a local state type cloned across unrelated units, one screen component hosting another's logic inline). Deviations from the bucket default are stated explicitly, not silent.
 - [ ] Every changed line traces directly to the task (no scope creep)
@@ -171,7 +162,7 @@ If any box is unchecked, do not stop. Address it.
 Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
 - **Branch off `main` at task start.** If `main` is checked out, `git switch -c feat/issue-<N>-<slug>` (or `fix/<slug>` for a defect) before any commit. If on another non-default branch, ask before extending — it may belong to another task. Stay-on-main is the failure mode.
-- **Push + open a PR at the end of Phase 7.** `git push -u origin <branch>` then open a PR against `main` (e.g. `gh pr create --base main`). PR body includes the Phase 4 decision log. Return the PR URL to the user.
+- **Push + open a PR at the end of Phase 7.** `git push -u origin <branch>` then open a PR against `main` (e.g. `gh pr create --base main`). PR body notes any high-stakes-decision outcomes from Phase 4 step 4 (if there were any). Return the PR URL to the user.
 - **Never edit existing tests** under `**/test/`, `*Test.*`, `*_test.*`, `*.test.*`, `tests/` unless the task explicitly asks. Adding new tests is encouraged.
 - **Never edit files under `.github/`** — CODEOWNERS gates this anyway.
 - **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.

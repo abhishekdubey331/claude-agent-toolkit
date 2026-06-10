@@ -38,7 +38,7 @@ Match the finding's shape against the skill list. Read each matching skill **now
 ## Addy Osmani process skills
 
 - **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if the finding describes a failing test, broken build, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't push past a failing test; don't "fix" a flake with a sleep/retry patch.
-- **`.claude/skills/doubt-driven-development.md`** — REQUIRED if the finding asks you to assert a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering guarantee). Spawn a fresh-context adversarial subagent on your proposed fix BEFORE committing. Interactive mode has no pull-panda; this is the substitute.
+- **`.claude/skills/doubt-driven-development.md`** — OPTIONAL, only when the fix hinges on a correctness guarantee a test genuinely can't cover (a subtle concurrency / idempotence / ordering property). Prefer writing a test that pins the property; reach for a fresh-context adversarial review only when no test can. Don't spawn it for ordinary fixes.
 - **`.claude/skills/incremental-implementation.md`** — REQUIRED if the finding implies changes across >1 file. Thin slices, one commit per logical change, build green between slices.
 - **`.claude/skills/code-simplification.md`** — applied **before the commit** in Phase 4. Read it now.
 
@@ -78,7 +78,7 @@ Run this sequence **in order**. Do not commit before simplify + verify.
    - Do NOT "improve" naming, comments, or formatting outside the finding's scope.
    - If the finding is in framework-specific code and a matching skill suggests a different pattern, follow the skill — but only for the lines covered by the finding.
 
-2. **Doubt-driven check (conditional, anti-skip).** If your fix asserts a non-trivial correctness property (thread-safety, idempotence, no-leak, exactly-once, ordering, public API signature change), invoke `.claude/skills/doubt-driven-development.md` and reconcile the subagent's findings BEFORE the next step. **Record the reconciliation in the commit body** — pipeline fixer mode requires this and interactive mode now matches. Skipping must be explicit ("decision was trivial because X").
+2. **High-stakes correctness check (rare).** Only if the fix hinges on a correctness guarantee no test can cover (subtle concurrency / idempotence / ordering, or a hard-to-reverse public-API change), apply `.claude/skills/doubt-driven-development.md` and note the outcome in the commit body. For ordinary fixes, skip this — the test you add in step 4 is the proof.
 
 3. **Simplify mini-pass.** Apply `.claude/skills/code-simplification.md` to **only the lines your fix touched**. Targets:
    - Did your fix add a defensive null-check the type system already guarantees? Remove.
@@ -112,7 +112,7 @@ Before saying done:
 - [ ] Concern was understood and restated to the user (Phase 1)
 - [ ] Matching skill(s) were read BEFORE writing the fix (Phase 2)
 - [ ] If the finding cited framework-specific code, the relevant project skill (if any) was loaded
-- [ ] If non-trivial correctness claim, doubt-driven-development was invoked **and the reconciliation is recorded in the commit body** (empty body on a non-trivial fix is the failure mode this checks)
+- [ ] If the fix hinged on a correctness guarantee no test could cover, that was checked (doubt-driven or otherwise) and noted in the commit body. Ordinary fixes need no such note.
 - [ ] Fix is minimal — touches only the lines the finding addresses
 - [ ] No patch-mindset trap without commit-body justification
 - [ ] Simplify mini-pass was run BEFORE the commit (Phase 4 step 3)
