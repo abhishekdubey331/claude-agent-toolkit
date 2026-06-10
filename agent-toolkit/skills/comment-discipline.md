@@ -5,9 +5,9 @@ description: Rules for what comments to write, keep, trim, or delete. Fires per-
 
 # Comment discipline
 
-The rules below decide whether a given comment should exist, be trimmed, or be deleted. They are the single source of truth — `implement.md`, `fix.md`, and any other workflow file that needs comment rules should reference this skill rather than restating.
+The rules below decide whether a given comment should exist, be trimmed, or be deleted. They are the single source of truth — the `/implement` and `/fix` commands, and any other workflow that needs comment rules, should reference this skill rather than restating.
 
-This skill was split out of `code-simplification.md` because it runs at a different trigger: **per-commit during implementation**, not once at the end of a task. Comments evaluated at write-time get evaluated honestly; comments evaluated days later are protected by sunk-cost bias.
+This skill was split out of the `code-simplification` skill because it runs at a different trigger: **per-commit during implementation**, not once at the end of a task. Comments evaluated at write-time get evaluated honestly; comments evaluated days later are protected by sunk-cost bias.
 
 ## When to apply
 
@@ -56,6 +56,6 @@ After the structural simplify pass, re-scan the diff for survivors. Treat each a
 
 Pairs with:
 
-- `.claude/skills/code-simplification.md` — the structural simplify pass. This skill is its comment-rule sibling, split out so each fires on the correct trigger.
-- `.claude/skills/refactoring-strategy.md` — narrowing visibility to `internal`/`private` often makes a docstring redundant (the contract no longer crosses a module boundary).
+- `code-simplification` — the structural simplify pass. This skill is its comment-rule sibling, split out so each fires on the correct trigger.
+- `refactoring-strategy` — narrowing visibility to `internal`/`private` often makes a docstring redundant (the contract no longer crosses a module boundary).
 - The `/implement` Phase-4 per-commit gate and `/fix` mini simplify gate both invoke this skill directly.

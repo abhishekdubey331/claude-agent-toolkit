@@ -69,6 +69,34 @@ test("a finding outside the diff is not posted inline (routed to the outside-dif
   assert.equal(decision.dropped, 1);
 });
 
+test("a high finding outside the diff still blocks (routed to outside-diff, not demoted)", () => {
+  const { payload, decision } = renderReview({
+    findingsDoc: { findings: [{ id: "x", path: "other.js", line: 3, severity: "high", body: "nope" }] },
+    verifiedDoc: { verdicts: [keep("x")] },
+    diffText: diffAdding("foo.js", 5),
+  });
+  assert.equal(payload.comments.length, 0, "out-of-diff finding is not posted inline");
+  assert.equal(decision.dropped, 1);
+  assert.ok(decision.blocking >= 1, "an out-of-diff high still counts toward blocking");
+  assert.equal(decision.event, "REQUEST_CHANGES", "a surviving high must block even when it can't anchor");
+});
+
+test("a suggestion is dropped when the finding's line is snapped to a neighbor", () => {
+  // line 7 isn't a changed line; it snaps to the nearest add. The committable
+  // suggestion must NOT survive — it would rewrite the snapped neighbor.
+  const diff = `diff --git a/foo.js b/foo.js\n--- a/foo.js\n+++ b/foo.js\n@@ -1,1 +1,1 @@\n+real line 1\n`;
+  const { payload } = renderReview({
+    findingsDoc: { findings: [{ id: "s", path: "foo.js", line: 7, severity: "medium", body: "bad", suggestion: "fixed line" }] },
+    verifiedDoc: { verdicts: [keep("s")] },
+    diffText: diff,
+  });
+  assert.equal(payload.comments.length, 1, "finding still anchors via snap");
+  const body = payload.comments[0].body;
+  assert.ok(body.includes("📍 Snapped"), "snap sub-note is present");
+  assert.ok(!body.includes("```suggestion"), "no committable suggestion on a snapped line");
+  assert.ok(!body.includes("Quick fix"), "no Quick fix pill when the suggestion is dropped");
+});
+
 test("no surviving findings -> neutral COMMENT, nothing posted", () => {
   const { payload, decision } = renderReview({ findingsDoc: { findings: [] }, verifiedDoc: { verdicts: [] }, diffText: diffAdding("foo.js", 3) });
   assert.equal(decision.event, "COMMENT");
