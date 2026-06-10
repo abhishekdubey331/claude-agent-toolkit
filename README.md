@@ -12,10 +12,12 @@ Four slash commands that map to the development lifecycle. Each one activates th
 
 | What you're doing | Command | Key principle |
 |-------------------|---------|---------------|
-| Turn a rough idea into a spec'd issue | `/agent-issue` | Intent before code |
 | Build a feature or task | `/implement` | Test first, simplify every commit |
 | Fix a specific finding | `/fix` | Root cause, not symptom |
 | Restructure existing code | `/refactor` | Behavior must not change |
+| File a GitHub issue for an automated pipeline | `/agent-issue` | Intent before code (GitHub-specific) |
+
+> **`/agent-issue` is GitHub-pipeline-specific** — it runs an intent interview, then files a GitHub issue with an `agent` label to trigger an automated implementer pipeline. If you don't run that pipeline (or you live in Jira/Linear/etc.), the reusable value is the [`interview-me`](agent-toolkit/skills/interview-me.md) skill: invoke it directly to sharpen a vague ticket, then run `/implement`. The other three commands operate on your repo and end in a pull request.
 
 Skills also activate automatically based on what you're doing — designing an interface triggers `api-and-interface-design`, restructuring code triggers `refactoring-strategy`, handling untrusted input triggers `security-and-hardening`, and so on.
 
