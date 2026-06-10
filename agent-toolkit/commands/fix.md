@@ -18,7 +18,7 @@ Before any code change:
 1. **`CLAUDE.md`** at the repo root. Read all sections defined there. The sections covering surgical changes and bug-fix discipline are the load-bearing sections for fixer work; they explicitly forbid the patch-mindset fixes that are tempting under interactive pressure.
 2. **`REVIEW.md`** at the repo root (if your repo has a review rubric). Read the severity table + "Always check" list. Lets you judge the severity of the finding and whether your fix accidentally violates any always-check item.
 
-These reads are non-negotiable. Confirm + skip only if already read this session.
+If you read these earlier this session and they haven't changed, say so and skip — **do not re-read**. Otherwise read them now.
 
 ---
 
@@ -78,21 +78,19 @@ Run this sequence **in order**. Do not commit before simplify + verify.
    - Do NOT "improve" naming, comments, or formatting outside the finding's scope.
    - If the finding is in framework-specific code and a matching skill suggests a different pattern, follow the skill — but only for the lines covered by the finding.
 
-2. **High-stakes correctness check (rare).** Only if the fix hinges on a correctness guarantee no test can cover (subtle concurrency / idempotence / ordering, or a hard-to-reverse public-API change), apply `.claude/skills/doubt-driven-development.md` and note the outcome in the commit body. For ordinary fixes, skip this — the test you add in step 4 is the proof.
-
-3. **Simplify mini-pass.** Apply `.claude/skills/code-simplification.md` to **only the lines your fix touched**. Targets:
+2. **Simplify mini-pass.** Apply the simplify checklist (loaded in Phase 2) to **only the lines your fix touched**. Targets:
    - Did your fix add a defensive null-check the type system already guarantees? Remove.
    - Did you add a comment that restates what the code says? Remove.
    - Did you wrap a non-throwing call in a try/catch? Remove.
    - Did you add a single-use helper that could be inlined? Inline.
    - **Boundary-check before deletion:** if a simplification removes state that crosses a system boundary (server payload, persisted column, ad-SDK callback id, idempotency key), pause and verify nothing outside this file observes it. The local test suite cannot see the boundary.
 
-4. **Verify gate.** Run the project's test suite (all tests green, including any new test you added). Run the linter / static-analysis check — no new findings on the touched file. Run the type checker if the language has one — no new findings on the touched file. Different tools catch different classes of problems, so run each one that applies.
+3. **Verify gate.** Run the project's test suite (all tests green, including any new test you added). Run the linter / static-analysis check — no new findings on the touched file. Run the type checker if the language has one — no new findings on the touched file. Different tools catch different classes of problems, so run each one that applies.
    - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one.
    - If a test that previously passed now fails because of your fix, you changed behavior beyond what the finding required — revisit step 1.
    - If a simplification required a test change, revert the simplification (not the test).
 
-5. **Commit.** Subject prefix `chore(agent-fix):` followed by a short summary (matches what the headless fixer produces, so commit history stays consistent across interactive + pipeline runs).
+4. **Commit.** Subject prefix `chore(agent-fix):` followed by a short summary (matches what the headless fixer produces, so commit history stays consistent across interactive + pipeline runs).
 
    Example:
    ```
@@ -106,21 +104,14 @@ The simplify-then-commit order is non-negotiable. Fixer commits accumulate; nois
 
 # Phase 5 — Final pre-stop checklist
 
-Before saying done:
+Confirm silently (don't echo them back):
 
-- [ ] CLAUDE.md + REVIEW.md (if present) were read (Phase 0)
-- [ ] Concern was understood and restated to the user (Phase 1)
-- [ ] Matching skill(s) were read BEFORE writing the fix (Phase 2)
-- [ ] If the finding cited framework-specific code, the relevant project skill (if any) was loaded
-- [ ] If the fix hinged on a correctness guarantee no test could cover, that was checked (doubt-driven or otherwise) and noted in the commit body. Ordinary fixes need no such note.
+- [ ] Concern understood + restated to the user (Phase 1)
 - [ ] Fix is minimal — touches only the lines the finding addresses
-- [ ] No patch-mindset trap without commit-body justification
-- [ ] Simplify mini-pass was run BEFORE the commit (Phase 4 step 3)
-- [ ] The project's test suite is green (post-simplify)
-- [ ] The linter / static-analysis check shows no new findings (post-simplify)
-- [ ] The type checker (if the language has one) shows no new findings (post-simplify)
-- [ ] No existing test was deleted, weakened, or given a skip/ignore annotation
-- [ ] Commit uses `chore(agent-fix):` prefix, subject ≤60 chars
+- [ ] No patch-mindset trap without a commit-body reason
+- [ ] Simplify mini-pass ran before the commit
+- [ ] Test suite + linter green (post-simplify); no existing test deleted or weakened
+- [ ] Commit uses `chore(agent-fix):` prefix
 
 If any box is unchecked, do not stop.
 

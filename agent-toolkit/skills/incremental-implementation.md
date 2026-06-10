@@ -116,57 +116,9 @@ Three similar lines of code is better than a premature abstraction. Implement th
 
 ### Rule 0.3: Reuse Before You Build
 
-Before introducing any new symbol, scan for an existing sibling. The CORRECT action depends on the category — not all categories want reuse. The full per-category table lives in `reuse-before-you-build.md`; this is the per-slice checklist.
+Before introducing any new symbol, scan for an existing sibling first. The right action — **reuse / extend / mirror / new** — depends on the symbol's category: shared primitives default to REUSE/EXTEND; pattern-instance components default to MIRROR; per-feature units (controllers, screen entry points, per-feature state types) default to NEW per feature + mirror structure. Inventing where you should reuse and reusing where you should create new are equally wrong. Attest the bucket default and your choice in the commit body — silent invention is the failure mode this rule exists to catch.
 
-The four category buckets and their defaults:
-
-| Bucket | Examples | Default when a sibling exists |
-|---|---|---|
-| **Shared primitives** | utilities/helpers, value types & DTOs, shared UI primitives, constants/strings/tokens, error mappers, formatters, test fakes/builders | **REUSE / EXTEND** |
-| **Pattern-instance components** | things built FROM the primitives following an existing template (dialogs, cards, forms, list rows, request handlers) | **MIRROR** an existing sibling |
-| **Per-feature / per-route units** | a feature's entry point/screen, its controller/view-model/presenter, its local state type | **NEW per feature** + mirror structure only |
-| **First-of-its-kind** | no precedent | **NEW** (setting precedent) |
-
-Per slice that introduces a symbol:
-
-1. **Search the codebase first.** Search for the domain noun + likely suffix using grep, find-references, or a code-search tool. Check callers and importers of the closest neighbor. Walk the canonical homes for your category.
-2. **Identify the bucket.** The bucket determines the default. Two failure modes are equally bad: inventing where you should have reused (shared-primitive bucket); reusing where you should have created new (per-feature unit bucket — sharing a controller across unrelated features, or hosting one feature's logic inside another's entry point).
-3. **Apply the default UNLESS you have a stated reason to deviate.** Deviations are legitimate but must be stated, not silent.
-4. **Attest in the commit body.** One line per new symbol naming the bucket default and your choice. Empty attestation = the failure mode this rule exists to catch.
-
-```
-REUSE CHECK (shared primitive — default REUSE/EXTEND):
-✗ New modal re-implementing the shared dialog shell + buttons
-✓ Reuse shared dialog shell + action primitives
-
-✗ New polling routine re-implementing backoff + correlation-id threading
-✓ Extend the existing polling utility, or factor the policy into a shared helper
-
-✗ New "Not now" string literal in a fresh copy object
-✓ Reuse the shared strings constant
-
-✗ New error type duplicating an existing one with a slightly different field name
-✓ Reuse the existing error type; add the variant via the shared mapper
-
-✗ New fake hand-rolling state when a sibling fake already has the pattern
-✓ Mirror the sibling fake's structure, or extend its base
-
-REUSE CHECK (pattern-instance component — default MIRROR):
-✗ New component that ignores the established shell + primitives pattern
-✓ New component built as a structural sibling: same shell + primitives
-
-REUSE CHECK (per-feature unit — default NEW per feature + mirror structure):
-✗ One controller shared across two unrelated features (silent, no justification)
-✓ Two new controllers per feature, mirrored layering. Deviation only with explicit rationale.
-
-✗ New feature entry point hosting another feature's logic inline
-✓ New entry point; delegate to the other feature; mirror the existing feature's structure
-
-✗ Local state type cloned identically across multiple unrelated features
-✓ Share a base only if the concept is cross-cutting; otherwise keep per-feature types diverged
-```
-
-If no sibling exists in the shared-primitive bucket, that's a signal to ASK before inventing. If you're in the per-feature unit bucket and NEW is the default, no question needed — just attest the bucket and the mirroring decision. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
+Full 4-bucket table + four-step gate: see `reuse-before-you-build.md`.
 
 ### Rule 0.5: Scope Discipline
 
