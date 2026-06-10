@@ -27,6 +27,11 @@ description: Automated, headless PR-review FIND stage that emits STRUCTURED find
   not speculation, and is the surest signal of a hallucinated/phantom API.
 - `$CONTEXT_FILE` (if present) — callers of changed symbols / graph context for
   cross-file reasoning.
+- `$INTENT_FILE` (if present) — the author's stated intent / PR description: the
+  goal and any deliberate decisions behind the change. Use it to tell a
+  **deliberate choice from a mistake** — do NOT flag something the author
+  explicitly chose (a knowingly-removed guard, an intentional API change) as a
+  defect. When intent is absent, review the diff on its merits.
 - The full worktree at the cwd — read files, trace callers, check tests.
 
 ## Authority

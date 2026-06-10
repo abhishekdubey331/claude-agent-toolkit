@@ -129,7 +129,7 @@ If any box is unchecked, do not stop.
 # Hard rules (adapted for interactive mode)
 
 - **Branch off `main` at task start, or extend the PR's branch if the finding came from a PR review comment.** Confirm with the user which one. Stay-on-main is the failure mode.
-- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated.
+- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated. Lead the PR/update note with a one-line **Risk: low/medium/high** (blast radius + reversibility) so the human knows how hard to look.
 - **Never edit files under `.github/`** — CODEOWNERS gates anyway.
 - **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you can't fix the finding** (missing context, unclear requirement, architectural mismatch), surface the blocker explicitly. Don't fake-finish or pretend ambiguity is resolved.
