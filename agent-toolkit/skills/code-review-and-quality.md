@@ -9,7 +9,7 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 
 ## Adaptation note for this repo
 
-Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across both `android-app` and `backend` projects.
+Adapted from upstream — core guidance unchanged; illustrative code examples genericized across languages. Bundled in the `agent-toolkit` plugin for general use across projects on any language or platform.
 
 
 ## Overview
@@ -267,7 +267,7 @@ Part of code review is dependency review:
 1. Does the existing stack solve this? (Often it does.)
 2. How large is the dependency? (Check bundle impact.)
 3. Is it actively maintained? (Check last commit, open issues.)
-4. Does it have known vulnerabilities? (`npm audit`)
+4. Does it have known vulnerabilities? (run your ecosystem's dependency-audit tool — `npm audit`, `pip-audit`, `cargo audit`, `govulncheck`, OWASP Dependency-Check, etc.)
 5. What's the license? (Must be compatible with the project.)
 
 **Rule:** Prefer standard library and existing utilities over new dependencies. Every dependency is a liability.

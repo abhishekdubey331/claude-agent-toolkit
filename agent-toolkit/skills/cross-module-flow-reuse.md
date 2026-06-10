@@ -14,7 +14,7 @@ This skill forces a deliberate decision **before** the duplication exists.
 Triggers — any of these:
 
 - You're about to implement a flow whose name you've seen elsewhere in the codebase: `claimRewardedUnlock`, `retryWithBackoff`, `pollUntilReady`, `resumeFromCheckpoint`, `migrateFromV1`.
-- Your task description mentions parity with another surface: "match the topic-quiz behaviour", "same recovery as PDF upload", "mirror the daily-quiz flow".
+- Your task description mentions parity with another surface: "match the topic-quiz behaviour", "same recovery as document upload", "mirror the daily-quiz flow".
 - You're about to copy 20+ lines from another file into the one you're editing.
 - A reviewer's question on an earlier PR was "doesn't module X already do this?"
 
@@ -31,9 +31,9 @@ Triggers — any of these:
 Spend ≤ 5 minutes searching for the existing impl before writing anything.
 
 Methods in order of preference:
-1. **Graph query** (if a code-review-graph MCP is available): `semantic_search_nodes` on the flow name; `query_graph(pattern=callers_of)` on any obvious central function.
+1. Search the codebase for the flow name and the domain noun using grep, find-references, or any code-search tool available. Find callers or importers of any obvious central function.
 2. **Grep for the canonical action verb:** `claim`, `retry`, `poll`, `resume`. Even noisy results are useful — you're scanning for files that *look* like they own this flow.
-3. **Grep for the matching domain exception or state:** if you're handling `QuizRewardedUnlockRequiredException`, grep for that type. Anywhere else it's caught is a candidate.
+3. **Grep for the matching domain exception or state type:** anywhere else it's caught or handled is a candidate implementation.
 
 Output: a list of 0..N existing implementations. If 0, skip to step 4 (copy doesn't apply — you're the first). If ≥ 1, continue.
 
@@ -42,13 +42,13 @@ Output: a list of 0..N existing implementations. If 0, skip to step 4 (copy does
 For each existing impl, write down the **shape** of the flow in 5-10 bullets:
 
 ```
-Topic-quiz claim flow (CreateQuizViewModel.claimRewardedGenerationUnlock):
+Topic-quiz claim flow (QuizController.claimRewardedGenerationUnlock):
 - mints clientRequestId + rewardEventId per call
 - preserves them in pendingRewardUnlockRequest across retries
 - on success: copies token into request, re-fires generate
 - emits analytics events: ClaimStarted, ClaimSucceeded, ClaimFailed
-- mutates DailyLimitReached.isUnlockingReward for in-flight feedback
-- error states surface inline in DailyLimitReached.message
+- mutates LimitReached.isUnlockingReward for in-flight feedback
+- error states surface inline in LimitReached.message
 ```
 
 Then write the shape of what you're about to build. Compare.
@@ -67,7 +67,7 @@ Three valid choices. Each has a real cost; pick deliberately.
 
 **Record the choice in the PR body.** Example:
 
-> *Decision: copy-with-simplifications.* `PdfGenerateViewModel.claimAndRetry` mirrors `CreateQuizViewModel.claimRewardedGenerationUnlock` but intentionally omits analytics (Phase 5) and pending-request preservation (loop-back-after-token-consumed semantics differ). Reviewers should treat the two as separate-by-design until a third caller appears.
+> *Decision: copy-with-simplifications.* `DocumentController.claimAndRetry` mirrors `QuizController.claimRewardedGenerationUnlock` but intentionally omits analytics (Phase 5) and pending-request preservation (loop-back-after-token-consumed semantics differ). Reviewers should treat the two as separate-by-design until a third caller appears.
 
 This is the artefact that prevents the six-months-later "wait, why are these subtly different?" archaeology session.
 
@@ -75,7 +75,7 @@ This is the artefact that prevents the six-months-later "wait, why are these sub
 
 Whichever path you took:
 
-- **Copy:** add a one-line comment at the new impl pointing at the original. `// Mirrors CreateQuizViewModel.claimRewardedGenerationUnlock; see PR #N for divergence rationale.`
+- **Copy:** add a one-line comment at the new impl pointing at the original. `// Mirrors QuizController.claimRewardedGenerationUnlock; see PR #N for divergence rationale.`
 - **Extract:** the new shared helper gets a doc-comment listing both callers. Each caller's commit message points at the helper.
 - **Delegate:** the new caller imports the existing impl. Add a comment explaining why this surface depends on the other (coupling is non-obvious from imports alone).
 
@@ -90,7 +90,7 @@ Whichever path you took:
 
 ## Pairs with other skills
 
-- `reuse-before-you-build.md` — the symbol-level sibling of this skill. Cheap default that runs on every new symbol (composable, ViewModel, DTO, copy constant, test fake). This skill takes over when the invention is a multi-step flow at 20+ lines and the copy/extract/delegate choice needs deliberate weighing.
-- `refactoring-strategy.md` — when the "extract" choice is real, treat it as T2 cross-module work (impact radius, parallel change).
+- `reuse-before-you-build.md` — the symbol-level sibling of this skill. Cheap default that runs on every new symbol (component, controller/view-model, value type/DTO, copy constant, test fake). This skill takes over when the invention is a multi-step flow at 20+ lines and the copy/extract/delegate choice needs deliberate weighing.
+- `refactoring-strategy.md` — when the "extract" choice is real, treat it as cross-module work (impact radius, parallel change).
 - `code-simplification.md` — the new impl's simplify pass should preserve the divergence justifications, not delete them as "obvious comments".
 - `doubt-driven-development.md` — the copy/extract/delegate decision is exactly the kind of non-trivial decision that should pass the adversarial-subagent check.

@@ -47,8 +47,8 @@ After the structural simplify pass, re-scan the diff for survivors. Treat each a
 
 ## When NOT to apply
 
-- **Generated code** (anything under `build/`, `generated/`, KSP/KAPT outputs). These come from codegen, not you.
-- **Test sources** under `**/test/`, `**/androidTest/`, `tests/`, `*Test.kt`, `*_test.py`, `*.test.ts`. Test names and arrange/act/assert structure carry the intent; tests are allowed to be wordier.
+- **Generated code** (anything under `build/`, `dist/`, `generated/`, or other codegen outputs). These come from codegen, not you.
+- **Test sources** under `**/test/`, `**/tests/`, `*Test.*`, `*_test.*`, `*.test.*`, `*.spec.*`. Test names and arrange/act/assert structure carry the intent; tests are allowed to be wordier.
 - **License headers** at the top of source files.
 - **CHANGELOG.md / README.md** prose — comment discipline is for code, not narrative docs.
 

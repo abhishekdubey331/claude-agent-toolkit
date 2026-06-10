@@ -9,7 +9,7 @@ description: Breaks work into ordered tasks. Use when you have a spec or clear r
 
 ## Adaptation note for this repo
 
-Bundled in the `agent-toolkit` plugin for use across `android-app` and `backend` projects. Extends upstream with **issue-ready task scaffolding** so plans flow into the `/agent-issue` pipeline without re-interviewing the user.
+Bundled in the `agent-toolkit` plugin for use across any project, regardless of language or platform. Extends upstream with **issue-ready task scaffolding** so plans flow into the `/agent-issue` pipeline without re-interviewing the user.
 
 Specifically, this version adds:
 - **Two mandatory Architecture Decisions** (verification strategy, issue-filing strategy) that pre-answer the most common `/agent-issue` interview questions.
@@ -98,8 +98,8 @@ Each vertical slice delivers working, testable functionality.
 Before writing tasks, lock these in the plan's **Architecture Decisions** section. They get asked over and over by `/agent-issue` otherwise.
 
 1. **Verification strategy.** How will acceptance be checked? Pick one (or one-per-layer):
-   - JVM unit tests only (e.g. against `MockWebServer` or in-memory Room)
-   - Unit + Compose `androidTest` / instrumentation
+   - Unit tests only (e.g. against a mock server or an in-memory store)
+   - Unit + integration / UI / instrumentation
    - Unit + manual staging smoke
    - Unit + CI integration against staging
 
@@ -128,7 +128,7 @@ Each task follows this structure. Every field below is required unless marked **
 
 **Acceptance criteria** (observable, testable, no implementation prescription):
 - [ ] [Behavior visible from outside the code under change. NOT "modify class X" or "use library Y".]
-- [ ] [Include the test command if it's load-bearing, e.g. "migration test passes: `./gradlew :library-android:testDebugUnitTest --tests "*Migration*"`".]
+- [ ] [Include the test command if it's load-bearing, e.g. "migration test passes: run the suite filtered to the migration tests".]
 - [ ] [Each AC must be checkable without reading the implementation.]
 
 **Edge cases to consider:**

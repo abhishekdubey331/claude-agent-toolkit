@@ -9,7 +9,7 @@ description: Hardens code against vulnerabilities. Use when handling user input,
 
 ## Adaptation note for this repo
 
-Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across both `android-app` and `backend` projects.
+Adapted from upstream — core guidance unchanged; illustrative code examples genericized across languages. Bundled in the `agent-toolkit` plugin for general use across projects on any language or platform.
 
 
 ## Overview
@@ -36,7 +36,7 @@ Security-first development practices for web applications. Treat every external 
 - **Hash passwords** with bcrypt/scrypt/argon2 (never store plaintext)
 - **Set security headers** (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
 - **Use httpOnly, secure, sameSite cookies** for sessions
-- **Run `npm audit`** (or equivalent) before every release
+- **Run your ecosystem's dependency-audit tool** (`npm audit`, `pip-audit`, `cargo audit`, `govulncheck`, OWASP Dependency-Check, etc.) before every release
 
 ### Ask First (Requires Human Approval)
 
@@ -62,8 +62,10 @@ Security-first development practices for web applications. Treat every external 
 
 ### 1. Injection (SQL, NoSQL, OS Command)
 
+The pattern is universal: never interpolate untrusted input into queries or commands. Use parameterized queries or prepared statements in every language.
+
 ```typescript
-// BAD: SQL injection via string concatenation
+// BAD: SQL injection via string concatenation (TypeScript/Node example)
 const query = `SELECT * FROM users WHERE id = '${userId}'`;
 
 // GOOD: Parameterized query
@@ -73,19 +75,31 @@ const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
 const user = await prisma.user.findUnique({ where: { id: userId } });
 ```
 
+```python
+# GOOD: Parameterized query (Python example)
+cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+```
+
+```go
+// GOOD: Parameterized query (Go example)
+row := db.QueryRow("SELECT * FROM users WHERE id = $1", userID)
+```
+
 ### 2. Broken Authentication
 
+Principles are universal: hash passwords with a slow, salted algorithm; load secrets from environment variables; mark session cookies httpOnly, secure, and sameSite.
+
 ```typescript
-// Password hashing
+// Password hashing (Node.js / TypeScript illustrative example)
 import { hash, compare } from 'bcrypt';
 
 const SALT_ROUNDS = 12;
 const hashedPassword = await hash(plaintext, SALT_ROUNDS);
 const isValid = await compare(plaintext, hashedPassword);
 
-// Session management
+// Session management — pull secret from environment, never from source code
 app.use(session({
-  secret: process.env.SESSION_SECRET,  // From environment, not code
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -97,24 +111,32 @@ app.use(session({
 }));
 ```
 
+In other ecosystems use the equivalent slow hash (Python: `passlib`/`bcrypt`, Go: `golang.org/x/crypto/bcrypt`, Java: Spring Security's `BCryptPasswordEncoder`, etc.) and your framework's session management — the cookie attributes apply universally.
+
 ### 3. Cross-Site Scripting (XSS)
 
+Always rely on your framework's auto-escaping. Never insert raw user content into the DOM or template output without sanitization.
+
 ```typescript
-// BAD: Rendering user input as HTML
+// BAD: Rendering user input as raw HTML (JavaScript/browser example)
 element.innerHTML = userInput;
 
 // GOOD: Use framework auto-escaping (React does this by default)
 return <div>{userInput}</div>;
 
-// If you MUST render HTML, sanitize first
+// If you MUST render HTML, sanitize first (browser environments)
 import DOMPurify from 'dompurify';
 const clean = DOMPurify.sanitize(userInput);
 ```
 
+Server-side template engines (Jinja2, Go `html/template`, ERB, Thymeleaf, etc.) auto-escape by default — don't bypass that unless you explicitly sanitize the input first.
+
 ### 4. Broken Access Control
 
+Always check ownership/authorization — not just authentication — before mutating or returning any resource. The pattern is universal across frameworks and languages.
+
 ```typescript
-// Always check authorization, not just authentication
+// Illustrative example (TypeScript/Express)
 app.patch('/api/tasks/:id', authenticate, async (req, res) => {
   const task = await taskService.findById(req.params.id);
 
@@ -125,20 +147,22 @@ app.patch('/api/tasks/:id', authenticate, async (req, res) => {
     });
   }
 
-  // Proceed with update
   const updated = await taskService.update(req.params.id, req.body);
   return res.json(updated);
 });
 ```
 
+Apply the same ownership check in any language: verify the resource belongs to the authenticated principal before proceeding.
+
 ### 5. Security Misconfiguration
 
+Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options) and CORS restrictions apply regardless of language or framework. Use your framework's idiomatic middleware or configuration to set them.
+
 ```typescript
-// Security headers (use helmet for Express)
+// Illustrative example (Node.js/Express — use helmet middleware)
 import helmet from 'helmet';
 app.use(helmet());
 
-// Content Security Policy
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
@@ -149,32 +173,41 @@ app.use(helmet.contentSecurityPolicy({
   },
 }));
 
-// CORS — restrict to known origins
+// CORS — restrict to known origins; load allowed origins from environment
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
   credentials: true,
 }));
 ```
 
+Equivalents in other stacks: Django `SecurityMiddleware` + `django-cors-headers`, Go `gorilla/handlers` or custom middleware, Spring Security's `HttpSecurity`, Nginx/Caddy config for static or reverse-proxied apps.
+
 ### 6. Sensitive Data Exposure
 
+Strip sensitive fields before returning API responses, and load secrets exclusively from environment variables — never hardcode them.
+
 ```typescript
-// Never return sensitive fields in API responses
+// Illustrative example (TypeScript): strip sensitive fields from API response
 function sanitizeUser(user: UserRecord): PublicUser {
   const { passwordHash, resetToken, ...publicFields } = user;
   return publicFields;
 }
 
-// Use environment variables for secrets
+// Load secrets from environment — fail fast if missing
 const API_KEY = process.env.STRIPE_API_KEY;
 if (!API_KEY) throw new Error('STRIPE_API_KEY not configured');
 ```
+
+The same pattern applies in any language: use serializer/DTO layers (Python Pydantic, Go struct tags, Java Jackson `@JsonIgnore`, Ruby `as_json`, etc.) to ensure sensitive fields are never accidentally serialised.
 
 ## Input Validation Patterns
 
 ### Schema Validation at Boundaries
 
+Validate all untrusted input at system boundaries (API route handlers, CLI argument parsers, message queue consumers, etc.) using your ecosystem's schema/validation library. Reject early and return structured errors.
+
 ```typescript
+// Illustrative example (TypeScript/Node — using Zod)
 import { z } from 'zod';
 
 const CreateTaskSchema = z.object({
@@ -184,28 +217,26 @@ const CreateTaskSchema = z.object({
   dueDate: z.string().datetime().optional(),
 });
 
-// Validate at the route handler
 app.post('/api/tasks', async (req, res) => {
   const result = CreateTaskSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(422).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid input',
-        details: result.error.flatten(),
-      },
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid input', details: result.error.flatten() },
     });
   }
-  // result.data is now typed and validated
   const task = await taskService.create(result.data);
   return res.status(201).json(task);
 });
 ```
 
+Equivalent libraries in other stacks: Python (Pydantic, marshmallow, cerberus), Go (validator, go-playground/validator), Java (Bean Validation / Hibernate Validator), Ruby (dry-validation), Rust (serde + validator).
+
 ### File Upload Safety
 
+Restrict file types and sizes regardless of stack. Never trust the file extension alone — verify the declared MIME type and, for critical use cases, inspect magic bytes.
+
 ```typescript
-// Restrict file types and sizes
+// Illustrative example (TypeScript)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -220,12 +251,12 @@ function validateUpload(file: UploadedFile) {
 }
 ```
 
-## Triaging npm audit Results
+## Triaging Dependency-Audit Results
 
-Not all audit findings require immediate action. Use this decision tree:
+Not all audit findings require immediate action. Use this decision tree with whichever audit tool your ecosystem provides (`npm audit`, `pip-audit`, `cargo audit`, `govulncheck`, OWASP Dependency-Check, etc.):
 
 ```
-npm audit reports a vulnerability
+Dependency-audit tool reports a vulnerability
 ├── Severity: critical or high
 │   ├── Is the vulnerable code reachable in your app?
 │   │   ├── YES --> Fix immediately (update, patch, or replace the dependency)
@@ -249,7 +280,10 @@ When you defer a fix, document the reason and set a review date.
 
 ## Rate Limiting
 
+Apply rate limiting at the API layer — stricter limits on authentication endpoints. Use your framework's middleware or a reverse proxy (Nginx, Caddy, API gateway).
+
 ```typescript
+// Illustrative example (Node.js/Express — using express-rate-limit)
 import rateLimit from 'express-rate-limit';
 
 // General API rate limit
@@ -266,6 +300,8 @@ app.use('/api/auth/', rateLimit({
   max: 10,  // 10 attempts per 15 minutes
 }));
 ```
+
+Equivalents: Django REST Framework throttle classes, Go `golang.org/x/time/rate`, Spring Boot `bucket4j`, infrastructure-level rate limiting via Nginx `limit_req`, Cloudflare rules, etc.
 
 ## Secrets Management
 
@@ -347,7 +383,7 @@ For detailed security checklists and pre-commit verification steps, see `referen
 
 After implementing security-relevant code:
 
-- [ ] `npm audit` shows no critical or high vulnerabilities
+- [ ] Dependency-audit tool (e.g. `npm audit`, `pip-audit`, `cargo audit`) shows no critical or high vulnerabilities
 - [ ] No secrets in source code or git history
 - [ ] All user input validated at system boundaries
 - [ ] Authentication and authorization checked on every protected endpoint

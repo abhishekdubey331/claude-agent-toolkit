@@ -5,25 +5,6 @@ description: Guides systematic root-cause debugging. Use when tests fail, builds
 
 > Adapted from [addyosmani/agent-skills/skills/debugging-and-error-recovery/SKILL.md](https://github.com/addyosmani/agent-skills/blob/main/skills/debugging-and-error-recovery/SKILL.md) — MIT-licensed, © Addy Osmani.
 
-## Adaptation note for this repo
-
-The skill content below is unmodified from upstream; this section adds the two adaptations needed when reading it in this repo:
-
-- **Stack-specific commands.** Examples below use npm/Node. For this Android
-  Kotlin codebase substitute:
-  - `npm test` / `npm run test` → `./gradlew testDebugUnitTest`
-  - `npm run build` → `./gradlew assembleDebug`
-  - `npm run lint` → `./gradlew detekt` (and/or `./gradlew ktlintCheck`)
-  - `npx tsc --noEmit` → not applicable; kotlinc runs as part of the build
-  - `npm audit` → no direct equivalent; review `app/build.gradle.kts` and
-    `gradle/libs.versions.toml` for dependency hygiene
-
-- **Cross-references to other Addy skills** (e.g. `git-workflow-and-versioning`,
-  `references/orchestration-patterns.md`). The full upstream skill set was
-  not imported — only the three currently in `.claude/skills/`. Apply the
-  conceptual principle when referenced; the explicit cross-references will
-  not resolve here.
-
 # Debugging and Error Recovery
 
 ## Overview
@@ -80,7 +61,7 @@ Cannot reproduce on demand:
 │   ├── Try with artificial delays (setTimeout, sleep) to widen race windows
 │   └── Run under load or concurrency to increase collision probability
 ├── Environment-dependent?
-│   ├── Compare Node/browser versions, OS, environment variables
+│   ├── Compare runtime/toolchain versions, OS, environment variables
 │   ├── Check for differences in data (empty vs populated database)
 │   └── Try reproducing in CI where the environment is clean
 ├── State-dependent?
@@ -94,15 +75,15 @@ Cannot reproduce on demand:
 ```
 
 For test failures:
-```bash
-# Run the specific failing test
-npm test -- --grep "test name"
+```
+# Run the specific failing test by name/filter using your runner's filter flag
+<your-test-command> --filter "test name"
 
 # Run with verbose output
-npm test -- --verbose
+<your-test-command> --verbose
 
-# Run in isolation (rules out test pollution)
-npm test -- --testPathPattern="specific-file" --runInBand
+# Run a single file in isolation (rules out test pollution)
+<your-test-command> --filter "specific-file" (run serially if your runner supports it)
 ```
 
 ### Step 2: Localize
@@ -126,7 +107,7 @@ git bisect start
 git bisect bad                    # Current commit is broken
 git bisect good <known-good-sha> # This commit worked
 # Git will checkout midpoint commits; run your test at each
-git bisect run npm test -- --grep "failing test"
+git bisect run <your-test-command>
 ```
 
 ### Step 3: Reduce
@@ -160,14 +141,13 @@ Ask: "Why does this happen?" until you reach the actual cause, not just where it
 
 Write a test that catches this specific failure:
 
-```typescript
+```
 // The bug: task titles with special characters broke the search
-it('finds tasks with special characters in title', async () => {
-  await createTask({ title: 'Fix "quotes" & <brackets>' });
-  const results = await searchTasks('quotes');
-  expect(results).toHaveLength(1);
-  expect(results[0].title).toBe('Fix "quotes" & <brackets>');
-});
+test "finds tasks with special characters in title":
+  create_task(title: 'Fix "quotes" & <brackets>')
+  results = search_tasks('quotes')
+  assert results.length == 1
+  assert results[0].title == 'Fix "quotes" & <brackets>'
 ```
 
 This test will prevent the same bug from recurring. It should fail without the fix and pass with it.
@@ -176,18 +156,18 @@ This test will prevent the same bug from recurring. It should fail without the f
 
 After fixing, verify the complete scenario:
 
-```bash
-# Run the specific test
-npm test -- --grep "specific test"
+```
+# Run the specific test using your runner's filter flag
+<your-test-command> --filter "specific test"
 
 # Run the full test suite (check for regressions)
-npm test
+run the test suite
 
 # Build the project (check for type/compilation errors)
-npm run build
+run the build; run the type checker if the language has one
 
 # Manual spot check if applicable
-npm run dev  # Verify in browser
+run the project locally and verify the fixed scenario
 ```
 
 ## Error-Specific Patterns
@@ -211,10 +191,10 @@ Test fails after code change:
 ```
 Build fails:
 ├── Type error → Read the error, check the types at the cited location
-├── Import error → Check the module exists, exports match, paths are correct
+├── Import/module error → Check the module exists, exports match, paths are correct
 ├── Config error → Check build config files for syntax/schema issues
-├── Dependency error → Check package.json, run npm install
-└── Environment error → Check Node version, OS compatibility
+├── Dependency error → Check the project's dependency manifest; reinstall dependencies
+└── Environment error → Check runtime/toolchain version, OS compatibility
 ```
 
 ### Runtime Error Triage
@@ -236,29 +216,24 @@ Runtime error:
 
 When under time pressure, use safe fallbacks:
 
-```typescript
+```
 // Safe default + warning (instead of crashing)
-function getConfig(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    console.warn(`Missing config: ${key}, using default`);
-    return DEFAULTS[key] ?? '';
-  }
-  return value;
-}
+function getConfig(key):
+  value = read_env(key)
+  if not value:
+    log_warn("Missing config: " + key + ", using default")
+    return DEFAULTS[key] or ""
+  return value
 
 // Graceful degradation (instead of broken feature)
-function renderChart(data: ChartData[]) {
-  if (data.length === 0) {
-    return <EmptyState message="No data available for this period" />;
-  }
-  try {
-    return <Chart data={data} />;
-  } catch (error) {
-    console.error('Chart render failed:', error);
-    return <ErrorState message="Unable to display chart" />;
-  }
-}
+function renderChart(data):
+  if data is empty:
+    return emptyState("No data available for this period")
+  try:
+    return chart(data)
+  catch error:
+    log_error("Chart render failed: " + error)
+    return errorState("Unable to display chart")
 ```
 
 ## Instrumentation Guidelines
@@ -316,6 +291,6 @@ After fixing a bug:
 - [ ] Root cause is identified and documented
 - [ ] Fix addresses the root cause, not just symptoms
 - [ ] A regression test exists that fails without the fix
-- [ ] All existing tests pass
-- [ ] Build succeeds
+- [ ] The full test suite passes
+- [ ] The build succeeds (and the type checker passes, if the language has one)
 - [ ] The original bug scenario is verified end-to-end

@@ -22,7 +22,7 @@ description: Automated, headless PR-review FIND stage that emits STRUCTURED find
 
 - `$DIFF_FILE` — the unified diff to review. **Review ONLY changes in it.**
 - `$SIGNALS_FILE` (if present) — ground truth from compiler / type-checker /
-  tests / linters (e.g. `tsc --noEmit`, detekt, unit-test check-runs). **Treat
+  tests / linters (e.g. a type-check, lint, or unit-test check-run). **Treat
   any compile/test failure there as a high-confidence finding** — it is fact,
   not speculation, and is the surest signal of a hallucinated/phantom API.
 - `$CONTEXT_FILE` (if present) — callers of changed symbols / graph context for

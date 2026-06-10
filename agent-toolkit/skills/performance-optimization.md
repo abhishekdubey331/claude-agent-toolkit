@@ -9,7 +9,7 @@ description: Optimizes application performance. Use when performance requirement
 
 ## Adaptation note for this repo
 
-Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across both `android-app` and `backend` projects.
+Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across any project, regardless of language or platform.
 
 
 ## Overview
