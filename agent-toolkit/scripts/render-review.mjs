@@ -19,6 +19,7 @@
 //   /tmp/review-decision.json   { event, posted, blocking, dropped, capped }
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const MAX_INLINE_COMMENTS = 8;
 const SNAP_DISTANCE = 10;
@@ -34,45 +35,62 @@ const CATEGORY_LABEL = {
   readability: "📖 Readability",
 };
 
-const findingsDoc = readJson(process.env.FINDINGS) || { findings: [] };
-const verifiedDoc = readJson(process.env.VERIFIED) || { verdicts: [] };
-const diffText = safeRead(process.env.DIFF_FILE);
+// Core pipeline as a pure function so the gate/sort/anchor logic is
+// unit-testable. Exported for render-review.test.mjs.
+export function renderReview({ findingsDoc, verifiedDoc, diffText, confidenceMin = CONFIDENCE_MIN, prHeadSha } = {}) {
+  const verdicts = new Map(((verifiedDoc && verifiedDoc.verdicts) || []).map((v) => [v.id, v]));
+  const { validLines, lineText } = buildLineMaps(parseUnifiedDiff(diffText));
 
-const verdicts = new Map((verifiedDoc.verdicts || []).map((v) => [v.id, v]));
-const { validLines, lineText } = buildLineMaps(parseUnifiedDiff(diffText));
+  // Gate: keep only findings the skeptic kept AND confidence >= threshold.
+  const gated = ((findingsDoc && findingsDoc.findings) || []).filter((f) => {
+    const v = verdicts.get(f.id) || { keep: false, confidence: 0 };
+    if (!v.keep) return false;
+    const c = typeof v.confidence === "number" ? v.confidence : f.confidence ?? 0;
+    return c >= confidenceMin;
+  });
 
-// Gate: keep only findings the skeptic kept AND confidence >= threshold.
-const gated = (findingsDoc.findings || []).filter((f) => {
-  const v = verdicts.get(f.id) || { keep: false, confidence: 0 };
-  if (!v.keep) return false;
-  const c = typeof v.confidence === "number" ? v.confidence : f.confidence ?? 0;
-  return c >= CONFIDENCE_MIN;
-});
+  const droppedFindings = [];
+  const anchored = [];
+  for (const f of gated) {
+    const r = normalizeComment(f, validLines, lineText);
+    if (r.comment) anchored.push({ comment: r.comment, severity: r.severity });
+    else droppedFindings.push({ raw: f, reason: r.reason });
+  }
 
-const droppedFindings = [];
-const normalized = [];
-const severities = [];
-for (const f of gated) {
-  const r = normalizeComment(f, validLines, lineText);
-  if (r.comment) { normalized.push(r.comment); severities.push(r.severity); }
-  else droppedFindings.push({ raw: f, reason: r.reason });
+  // Severity-first ordering so a blocking (high) finding is NEVER capped out of
+  // the posted set, and the verdict can't be silently downgraded by input order.
+  const SEV_RANK = { high: 0, medium: 1, low: 2 };
+  anchored.sort((a, b) => (SEV_RANK[a.severity] ?? 1) - (SEV_RANK[b.severity] ?? 1));
+
+  const posted = anchored.slice(0, MAX_INLINE_COMMENTS);
+  const comments = posted.map((x) => x.comment);
+  const cappedCount = anchored.length - posted.length;
+  const includedFiles = [...validLines.keys()];
+
+  const body = renderBody(findingsDoc || {}, { droppedFindings, cappedCount, includedFiles, postedCount: comments.length });
+
+  // A surviving high-severity finding blocks regardless of the inline cap.
+  const blocking = anchored.filter((x) => x.severity === "high").length;
+  const event = blocking > 0 ? "REQUEST_CHANGES" : "COMMENT";
+
+  return {
+    payload: { commit_id: prHeadSha, event, body, comments },
+    decision: { event, posted: comments.length, blocking, dropped: droppedFindings.length, capped: cappedCount },
+  };
 }
-const comments = normalized.slice(0, MAX_INLINE_COMMENTS);
-const postedSeverities = severities.slice(0, MAX_INLINE_COMMENTS);
-const cappedCount = normalized.length - comments.length;
-const includedFiles = [...validLines.keys()];
 
-const body = renderBody(findingsDoc, { droppedFindings, cappedCount, includedFiles, postedCount: comments.length });
-const event = postedSeverities.includes("high") ? "REQUEST_CHANGES" : "COMMENT";
+function main() {
+  const findingsDoc = readJson(process.env.FINDINGS) || { findings: [] };
+  const verifiedDoc = readJson(process.env.VERIFIED) || { verdicts: [] };
+  const diffText = safeRead(process.env.DIFF_FILE);
+  const { payload, decision } = renderReview({ findingsDoc, verifiedDoc, diffText, prHeadSha: process.env.PR_HEAD_SHA });
+  writeFileSync("/tmp/review-payload.json", JSON.stringify(payload));
+  writeFileSync("/tmp/review-decision.json", JSON.stringify(decision));
+  console.log(`render: event=${decision.event} posted=${decision.posted} dropped=${decision.dropped} capped=${decision.capped}`);
+}
 
-writeFileSync("/tmp/review-payload.json", JSON.stringify({
-  commit_id: process.env.PR_HEAD_SHA, event, body, comments,
-}));
-writeFileSync("/tmp/review-decision.json", JSON.stringify({
-  event, posted: comments.length, blocking: postedSeverities.filter((s) => s === "high").length,
-  dropped: droppedFindings.length, capped: cappedCount,
-}));
-console.log(`render: event=${event} posted=${comments.length} dropped=${droppedFindings.length} capped=${cappedCount}`);
+// Run as a CLI only when invoked directly — stays inert when imported by tests.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();
 
 // --------------------------------------------------------------------------
 function readJson(p) { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } }

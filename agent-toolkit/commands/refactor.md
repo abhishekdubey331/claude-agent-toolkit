@@ -14,7 +14,7 @@ $ARGUMENTS
 # Phase 0 — Mandatory reads
 
 1. **`CLAUDE.md`** — read all sections defined there, paying particular attention to any sections covering simplicity, surgical changes, and bug-fix discipline. The surgical-changes section is load-bearing — don't expand the diff beyond what the refactor requires.
-2. **`.claude/skills/refactoring-strategy.md`** — the playbook for this entire command. Tier classification, patterns, anti-patterns, mini-playbooks. **Read it now; it governs every decision below.**
+2. the **`refactoring-strategy`** skill — the playbook for this entire command. Tier classification, patterns, anti-patterns, mini-playbooks. **Load it now; it governs every decision below.**
 3. **`REVIEW.md`** — severity calibration (if your repo has a review rubric).
 
 If you read these earlier this session and they haven't changed, say so and skip — **do not re-read**. Otherwise read them now.
@@ -23,7 +23,7 @@ If you read these earlier this session and they haven't changed, say so and skip
 
 # Phase 1 — Tier-gate (MANDATORY — do not skip)
 
-Per `refactoring-strategy.md`, classify the task:
+Per the `refactoring-strategy` skill, classify the task:
 
 - **T1 (Local)** — one function or file
 - **T2 (Cross-module)** — multiple files; signature/field/class moves
@@ -31,7 +31,7 @@ Per `refactoring-strategy.md`, classify the task:
 
 **State the classification to the user with reasoning.** Example: "I classified this as T2 — it touches QuizRepository and its 6 callers across the data and domain layers."
 
-**Stop-and-ask triggers** (per `refactoring-strategy.md`) — if ANY apply, STOP and ask the user before proceeding:
+**Stop-and-ask triggers** (per the `refactoring-strategy` skill) — if ANY apply, STOP and ask the user before proceeding:
 
 1. Public API would change
 2. Test coverage would drop
@@ -50,7 +50,7 @@ Are tests covering the affected code?
 
 - **Green** → proceed to Phase 3.
 - **Red** → STOP. Fix the failing test first; you refactor on GREEN only.
-- **None** → STOP. Write **characterization tests** first per `refactoring-strategy.md` (the legacy code is the oracle — pin every branch with concrete input/output pairs). Get user ack before refactor begins. If you can't write characterization tests for this code, commit `blocked: no test harness for <file>` and stop.
+- **None** → STOP. Write **characterization tests** first per the `refactoring-strategy` skill (the legacy code is the oracle — pin every branch with concrete input/output pairs). Get user ack before refactor begins. If you can't write characterization tests for this code, commit `blocked: no test harness for <file>` and stop.
 
 For any T2/T3 change, estimate the blast radius **before** Phase 3 by searching the codebase for the symbol and its callers (grep / find-references / a code-search tool). Verify that callers match your expectation, confirm the blast radius is as expected, and confirm no critical flows are silently affected.
 
@@ -74,7 +74,7 @@ Show the user the planned commit subjects (Conventional Commits, `refactor:` pre
 For each commit in the plan, run this loop **in order**. Do not skip steps; do not batch.
 
 1. **Make the change** for this commit only. One named refactoring; no scope creep.
-2. **Simplify mini-pass** — apply the simplify checklist (load `code-simplification.md` once at task start if you haven't this session, then apply from memory) to *only* the staged/unstaged diff for this commit. Targets:
+2. **Simplify mini-pass** — apply the simplify checklist (load the `code-simplification` skill once at task start if you haven't this session, then apply from memory) to *only* the staged/unstaged diff for this commit. Targets:
    - Dead branches / unreachable code from the refactor
    - Defensive null-checks the type system already guarantees
    - Single-use helpers introduced as scaffolding that can now be inlined
@@ -84,7 +84,7 @@ For each commit in the plan, run this loop **in order**. Do not skip steps; do n
 
 The simplify-before-commit order is non-negotiable. Refactor commits accumulate noise fast otherwise.
 
-**High-stakes step (rare):** if the plan includes a genuinely high-stakes step — a new public abstraction, an irreversible mechanical change, or a hard-to-undo dependency inversion — optionally apply `.claude/skills/doubt-driven-development.md` before that commit. Mechanical, test-covered steps skip it.
+**High-stakes step (rare):** if the plan includes a genuinely high-stakes step — a new public abstraction, an irreversible mechanical change, or a hard-to-undo dependency inversion — optionally apply the `doubt-driven-development` skill before that commit. Mechanical, test-covered steps skip it.
 
 ---
 

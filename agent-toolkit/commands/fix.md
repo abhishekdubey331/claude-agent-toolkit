@@ -3,7 +3,7 @@ description: Apply a minimal targeted fix to a specific finding using the projec
 argument-hint: <finding description, ideally with file:line and the concern>
 ---
 
-You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline — the **same** protocol the headless `claude-fixer.yaml` pipeline applies to pull-panda comments, but driven interactively by the user. This command body does not rely on you reading the canonical `.github/agent-prompts/fixer.md` — its protocol is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 2.)
+You are addressing a single finding (review comment, bug report, lint flag, audit note) using this repo's full fixer discipline, driven interactively by the user. Its full protocol is inlined below; you don't need any external pipeline files.
 
 **Finding:**
 
@@ -37,14 +37,14 @@ Match the finding's shape against the skill list. Read each matching skill **now
 
 ## Addy Osmani process skills
 
-- **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if the finding describes a failing test, broken build, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't push past a failing test; don't "fix" a flake with a sleep/retry patch.
-- **`.claude/skills/doubt-driven-development.md`** — OPTIONAL, only when the fix hinges on a correctness guarantee a test genuinely can't cover (a subtle concurrency / idempotence / ordering property). Prefer writing a test that pins the property; reach for a fresh-context adversarial review only when no test can. Don't spawn it for ordinary fixes.
-- **`.claude/skills/incremental-implementation.md`** — REQUIRED if the finding implies changes across >1 file. Thin slices, one commit per logical change, build green between slices.
-- **`.claude/skills/code-simplification.md`** — applied **before the commit** in Phase 4. Read it now.
+- the **`debugging-and-error-recovery`** skill — REQUIRED if the finding describes a failing test, broken build, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't push past a failing test; don't "fix" a flake with a sleep/retry patch.
+- the **`doubt-driven-development`** skill — OPTIONAL, only when the fix hinges on a correctness guarantee a test genuinely can't cover (a subtle concurrency / idempotence / ordering property). Prefer writing a test that pins the property; reach for a fresh-context adversarial review only when no test can. Don't spawn it for ordinary fixes.
+- the **`incremental-implementation`** skill — REQUIRED if the finding implies changes across >1 file. Thin slices, one commit per logical change, build green between slices.
+- the **`code-simplification`** skill — applied **before the commit** in Phase 4. Load it now.
 
 ## Framework/platform skills
 
-If the finding is in framework-specific code and your project ships matching skills under `.claude/skills/` (state, rendering, concurrency, lifecycle), load the relevant one before writing the fix.
+If the finding is in framework-specific code and your project ships matching skills (state, rendering, concurrency, lifecycle), load the relevant one before writing the fix.
 
 ---
 

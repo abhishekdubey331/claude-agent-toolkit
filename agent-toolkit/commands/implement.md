@@ -3,7 +3,7 @@ description: Implement a task using the project's full implementer workflow — 
 argument-hint: <task description, e.g. "add swipe-to-dismiss to result screen">
 ---
 
-You are taking on an interactive implementation task using this repo's full implementer discipline — the **same** rules the headless `claude-implementer.yaml` pipeline applies, but driven by the user in real time. This command body does not rely on you reading the canonical `.github/agent-prompts/implementer.md` — its workflow is fully inlined below. (Skill files under `.claude/skills/` are still external reads, invoked on demand per the routing rules in Phase 1.)
+You are taking on an interactive implementation task using this repo's full implementer discipline, driven by the user in real time. Its full workflow is inlined below; you don't need any external pipeline files.
 
 **Task:**
 
@@ -28,7 +28,7 @@ Decide which skills your task needs based on its shape. **Load a conditional ski
 
 ## Reuse scan — MANDATORY before introducing any new symbol
 
-The principle is **scan first**, not "reuse everything". The correct action depends on the category — some want reuse, some want mirror, some want new-per-feature with mirrored structure. Full skill: `.claude/skills/reuse-before-you-build.md` (per-category table + four-step gate; its **flow-level escalation** section covers multi-step flows at 20+ lines).
+The principle is **scan first**, not "reuse everything". The correct action depends on the category — some want reuse, some want mirror, some want new-per-feature with mirrored structure. Full skill: the `reuse-before-you-build` skill (per-category table + four-step gate; its **flow-level escalation** section covers multi-step flows at 20+ lines).
 
 Quick mental model — the four buckets and their defaults:
 
@@ -51,18 +51,18 @@ If you cannot find a sibling in the shared-primitive bucket, that's a signal to 
 
 ## Process skills — load on trigger
 
-- **`.claude/skills/incremental-implementation.md`** — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
-- **`.claude/skills/debugging-and-error-recovery.md`** — REQUIRED if this is a defect with a stack trace, repro, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't ship symptom-patches; this skill is how you avoid that.
-- **`.claude/skills/doubt-driven-development.md`** — OPTIONAL, reserved for genuinely high-stakes calls: an irreversible/destructive side-effect, a hard-to-reverse public-API or schema change, or a concurrency/idempotence guarantee a test can't cover. For those, spawn a fresh-context adversarial reviewer. **Do not** run it on routine commits — a passing test is the cheaper, stronger signal, and per-commit adversarial reviews are the biggest avoidable token cost in this workflow.
-- **`.claude/skills/code-simplification.md`** AND **`.claude/skills/comment-discipline.md`** — read BOTH now, once. Phase 4 applies them as a checklist before every commit — **do not re-open these files per commit** (re-reading them each commit is a top avoidable token cost).
+- the **`incremental-implementation`** skill — REQUIRED if task touches >1 file or you expect to write ~100+ lines before the first test runs. Forces thin vertical slices, one logical change per commit, build green between slices.
+- the **`debugging-and-error-recovery`** skill — REQUIRED if this is a defect with a stack trace, repro, or unexpected behavior. Six-step triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. Don't ship symptom-patches; this skill is how you avoid that.
+- the **`doubt-driven-development`** skill — OPTIONAL, reserved for genuinely high-stakes calls: an irreversible/destructive side-effect, a hard-to-reverse public-API or schema change, or a concurrency/idempotence guarantee a test can't cover. For those, spawn a fresh-context adversarial reviewer. **Do not** run it on routine commits — a passing test is the cheaper, stronger signal, and per-commit adversarial reviews are the biggest avoidable token cost in this workflow.
+- the **`code-simplification`** skill AND the **`comment-discipline`** skill — load BOTH now, once. Phase 4 applies them as a checklist before every commit — **do not re-invoke these skills per commit** (re-loading them each commit is a top avoidable token cost).
 
 ## Framework-specific skills
 
-If your project ships framework-specific skills under `.claude/skills/` (state management, rendering, concurrency, etc.), load the ones matching the code you're touching, before writing code.
+If your project ships framework-specific skills (state management, rendering, concurrency, etc.), load the ones matching the code you're touching, before writing code.
 
 ## Repo-specific complementary skills
 
-If your repo ships explore / debug / refactor / review skills under `.claude/skills/`, read the relevant one on demand — skip if absent.
+If your repo ships explore / debug / refactor / review skills, invoke the relevant one on demand — skip if absent.
 
 After Phase 1, state to the user (briefly): which skills you loaded, and what your plan is. **Ask clarifying questions if the task is ambiguous.** The headless pipeline can't; you can.
 
@@ -102,7 +102,7 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
 **Per-commit loop:**
 
 1. **Code** — write the minimum code that makes the failing test (or this commit's scope) pass.
-2. **Simplify mini-pass** — apply the simplify + comment checklist you loaded in Phase 1, **from memory (do not re-open the skill files)**, to *only the staged/unstaged diff for this commit* (branch-base `git merge-base origin/main HEAD`). Targets:
+2. **Simplify mini-pass** — apply the simplify + comment checklist you loaded in Phase 1, **from memory (do not re-invoke the skills)**, to *only the staged/unstaged diff for this commit* (branch-base `git merge-base origin/main HEAD`). Targets:
    - Dead branches / unreachable code introduced in this commit
    - Defensive null-checks the type system already guarantees
    - Single-use helpers that could be inlined
