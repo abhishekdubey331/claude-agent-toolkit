@@ -1,12 +1,32 @@
 # claude-agent-toolkit
 
-A personal [Claude Code](https://claude.com/claude-code) plugin marketplace — an opinionated, **language- and platform-agnostic** workflow for shipping AI-written code without the slop:
+**A lean, language- and platform-agnostic workflow for shipping AI-written code without the slop.**
 
-> Socratic issue crafting → TDD-first implementation → surgical bug-fixing → tier-gated refactoring → adversarial PR review.
+Commands and skills that encode the discipline senior engineers bring to production code — Socratic issue crafting, TDD-first implementation, surgical bug-fixing, tier-gated refactoring, and adversarial PR review — packaged so an AI agent follows them consistently. Tuned to be **cheap on tokens**: skills are read once and applied from memory, the expensive adversarial passes are opt-in, and the full test gate runs once at the end.
 
-It is deliberately **lean on tokens**: each skill is read once and applied from memory, the expensive adversarial passes are opt-in (a passing test is the cheaper signal), and the full test/lint gate runs once at the end instead of on every commit.
+---
 
-## Install
+## Commands
+
+Four slash commands that map to the development lifecycle. Each one activates the right skills automatically.
+
+| What you're doing | Command | Key principle |
+|-------------------|---------|---------------|
+| Turn a rough idea into a spec'd issue | `/agent-issue` | Intent before code |
+| Build a feature or task | `/implement` | Test first, simplify every commit |
+| Fix a specific finding | `/fix` | Root cause, not symptom |
+| Restructure existing code | `/refactor` | Behavior must not change |
+
+Skills also activate automatically based on what you're doing — designing an interface triggers `api-and-interface-design`, restructuring code triggers `refactoring-strategy`, handling untrusted input triggers `security-and-hardening`, and so on.
+
+---
+
+## Quick Start
+
+<details>
+<summary><b>Claude Code (recommended)</b></summary>
+
+**Marketplace install:**
 
 ```
 /plugin marketplace add abhishekdubey331/claude-agent-toolkit
@@ -19,104 +39,167 @@ Update later:
 /plugin update agent-toolkit@claude-agent-toolkit
 ```
 
-## Design principles
+**Local / development:**
 
-- **Language/platform-agnostic.** No toolchain is hardcoded. The commands refer to "the project's test command", "the linter", "the type checker" *by role* — define the concrete commands once in your repo's `CLAUDE.md` / `AGENTS.md` and the agent uses them. Works on any stack (Node/TS, Python, Go, Rust, Android/Kotlin, …).
-- **Cost-lean by default.** The heavy paths are opt-in, not mandatory:
-  - per-commit adversarial review (`doubt-driven-development`) is reserved for genuinely high-stakes calls — irreversible side-effects, hard-to-reverse API/schema changes, or a guarantee no test can cover;
-  - skill files are loaded **once** and applied from memory, not re-read on every commit;
-  - the **full** test + lint + type-check gate runs **once** at the end; each commit only runs the focused tests for its change.
-- **Discipline that survives.** TDD-first, simplify-before-every-commit, surgical (minimal-diff) changes, Conventional Commits, branch + PR by default.
-- **Self-contained.** Each command inlines its own workflow; skills are read on demand by relevance.
+```bash
+git clone https://github.com/abhishekdubey331/claude-agent-toolkit.git
+claude --plugin-dir /path/to/claude-agent-toolkit/agent-toolkit
+```
 
-## Slash commands (`/agent-toolkit:...`)
+</details>
 
-| Command | What it does |
-|---|---|
-| `/implement <task>` | TDD-first implementer. Plan + reuse scan → **write failing tests first** → per-commit loop (code → simplify → focused tests → commit) → one full-suite verify → open a PR with an **Intent / What changed / Risk / Testing** body. |
-| `/fix <finding>` | Surgical fixer for a single finding (review comment, bug, lint flag). Understand → route to the right skill → decide (fix / push back / escalate) → minimal fix → simplify → verify → commit. **Refuses patch-mindset fixes** (swallowed exceptions, sleep-to-fix-a-flake, ignore annotations) unless justified. PR/update note leads with a **Risk** rating. |
-| `/refactor <task>` | Tier-gated refactoring (**T1** local / **T2** cross-module / **T3** architectural) driven by the `refactoring-strategy` playbook. Classify → (write characterization tests if none exist) → plan → per-commit execute with simplify → full verify. **Behavior must not change** (Two Hats Rule); T3 enters plan mode for approval first. |
-| `/agent-issue <rough task>` | Socratic issue-crafting wizard. Runs `interview-me` (one anchored question at a time) to ~95% intent confidence, restates the intent, expands it into a structured GitHub issue, and files it via `gh issue create`. |
+<details>
+<summary><b>Cursor / Codex / other agents</b></summary>
 
-## Skills
+The skills under `agent-toolkit/skills/` are plain Markdown — copy the ones you want into your agent's rules/instructions directory (e.g. `.cursor/rules/`), or reference the directory. The slash commands are Claude Code-specific, but each one inlines its full workflow, so the body can be pasted as instructions into any agent that accepts system prompts or instruction files.
 
-Skills auto-load when Claude Code matches their `description` to the work at hand. **16 skills**, grouped:
+</details>
 
-**Issue & planning**
-| Skill | Purpose |
-|---|---|
-| `interview-me` | One-question-at-a-time intent extraction (anchored guesses, confidence tracking, out-of-scope gate). Underlies `/agent-issue`. |
-| `planning-and-task-breakdown` | Decompose work into ordered, independently verifiable tasks with explicit acceptance criteria. |
+---
 
-**Implementation discipline**
-| Skill | Purpose |
-|---|---|
-| `test-driven-development` | Failing test first; "Prove-It" reproduction test for bug fixes. |
-| `incremental-implementation` | Thin vertical slices; keep the build green between slices. |
-| `reuse-before-you-build` | Before introducing any new symbol, scan for an existing sibling and apply the right default per category (4-bucket reuse / mirror / new model + flow-level escalation for multi-step flows). |
-| `code-simplification` | Strip dead branches, redundant guards, single-use helpers, restating comments — without changing behavior. |
-| `comment-discipline` | What comments to write, keep, trim, or delete; catches docstring bloat and unjustified lint suppressions. Applied per-commit. |
-| `doubt-driven-development` | Fresh-context adversarial review before a non-trivial decision stands. **Opt-in / high-stakes only.** |
+## All 18 Skills
 
-**Debugging & refactoring**
-| Skill | Purpose |
-|---|---|
-| `debugging-and-error-recovery` | Six-step root-cause triage: Reproduce → Localize → Reduce → Fix → Guard → Verify. |
-| `refactoring-strategy` | Tier-gated structural playbook: Parallel Change, Strangler Fig, Branch by Abstraction, Mikado Method, characterization tests, Two Hats Rule, stop-and-ask triggers. |
+The commands above are entry points. The pack includes 18 skills total — 16 lifecycle skills plus a 2-skill automated PR-review pipeline. Each skill is a structured workflow with steps, verification gates, and anti-rationalization tables. You can also reference any skill directly.
 
-**Review & quality**
-| Skill | Purpose |
-|---|---|
-| `code-review-and-quality` | Multi-axis interactive review: correctness, readability, architecture, security, performance. (For headless CI review, use the pipeline below.) |
+### Define - Clarify what to build
 
-**Design & engineering**
-| Skill | Purpose |
-|---|---|
-| `api-and-interface-design` | Stable interfaces, Hyrum's Law, module boundaries; REST/GraphQL contracts. |
-| `security-and-hardening` | Input validation, parameterized queries, auth, secrets, security headers, OWASP basics (multi-ecosystem). |
-| `performance-optimization` | Measure-before-optimize discipline; profiling workflow. |
-| `deprecation-and-migration` | Safely sunset old systems; migrate users from old to new. |
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [interview-me](agent-toolkit/skills/interview-me.md) | One-question-at-a-time interview that extracts what the user actually wants instead of what they think they should want, to ~95% confidence | The ask is underspecified, or the user invokes "interview me" / "are we sure?" |
 
-**Git**
-| Skill | Purpose |
-|---|---|
-| `git-workflow-and-versioning` | Trunk-based development, atomic commits, Conventional Commits. |
+### Plan - Break it down
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [planning-and-task-breakdown](agent-toolkit/skills/planning-and-task-breakdown.md) | Decompose a spec into small, ordered, independently verifiable tasks with acceptance criteria | You have requirements and need implementable units |
+
+### Build - Write the code
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [test-driven-development](agent-toolkit/skills/test-driven-development.md) | Failing test first; the Prove-It reproduction test for bug fixes | Implementing logic, fixing a bug, or changing behavior |
+| [incremental-implementation](agent-toolkit/skills/incremental-implementation.md) | Thin vertical slices — implement, test, verify, commit; green between slices | Any change touching more than one file |
+| [reuse-before-you-build](agent-toolkit/skills/reuse-before-you-build.md) | Scan for an existing sibling before any new symbol; apply the right default per category (reuse / mirror / new) plus flow-level escalation | About to introduce a new component, type, helper, or multi-step flow |
+| [code-simplification](agent-toolkit/skills/code-simplification.md) | Strip dead branches, redundant guards, single-use helpers, restating comments — without changing behavior | Code works but is harder to read than it should be |
+| [comment-discipline](agent-toolkit/skills/comment-discipline.md) | What comments to keep, trim, or delete; catches docstring bloat and unjustified lint suppressions | Writing or editing comments (runs per-commit) |
+| [doubt-driven-development](agent-toolkit/skills/doubt-driven-development.md) | Fresh-context adversarial review of a non-trivial decision in-flight — CLAIM → EXTRACT → DOUBT → RECONCILE → STOP. **Opt-in, high-stakes only** | An irreversible/high-stakes call a passing test can't cover |
+| [api-and-interface-design](agent-toolkit/skills/api-and-interface-design.md) | Contract-first design, Hyrum's Law, error semantics, boundary validation | Designing an API, module boundary, or public interface |
+
+### Verify - Prove it works
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [debugging-and-error-recovery](agent-toolkit/skills/debugging-and-error-recovery.md) | Six-step root-cause triage: Reproduce → Localize → Reduce → Fix → Guard → Verify | A test fails, a build breaks, or behavior is unexpected |
+
+### Review - Quality gates before merge
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [code-review-and-quality](agent-toolkit/skills/code-review-and-quality.md) | Multi-axis review: correctness, readability, architecture, security, performance | Before merging any change (interactive) |
+| [security-and-hardening](agent-toolkit/skills/security-and-hardening.md) | OWASP basics, input validation, auth patterns, secrets, dependency auditing | Handling untrusted input, auth, storage, or external integrations |
+| [performance-optimization](agent-toolkit/skills/performance-optimization.md) | Measure-first approach — profiling workflow, anti-pattern detection | Performance requirements exist or you suspect a regression |
+
+### Refactor - Restructure safely
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [refactoring-strategy](agent-toolkit/skills/refactoring-strategy.md) | Tier-gated playbook: Parallel Change, Strangler Fig, Branch by Abstraction, Mikado Method, Two Hats Rule | Restructuring beyond one function — moves, signature changes, untangling dependencies |
+
+### Ship - Land it
+
+| Skill | What It Does | Use When |
+|-------|-------------|----------|
+| [git-workflow-and-versioning](agent-toolkit/skills/git-workflow-and-versioning.md) | Trunk-based development, atomic commits, Conventional Commits | Making any code change |
+| [deprecation-and-migration](agent-toolkit/skills/deprecation-and-migration.md) | Code-as-liability mindset; safe sunset and user migration patterns | Removing old systems, migrating users, or sunsetting features |
+
+---
 
 ## Automated PR-review pipeline
 
-A headless, CI-friendly reviewer wired as two `claude -p` stages plus a deterministic renderer — it produces a single GitHub review and **never posts from a model**:
+A headless, CI-friendly reviewer wired as two `claude -p` stages plus a deterministic renderer. It produces a single GitHub review and **never posts from a model** — a CI step posts the payload the renderer writes.
 
-1. **`code-review-bot`** (FIND) — emits structured findings (severity + confidence + evidence + a punchy title) to a JSON file. Posts nothing. Accepts an optional intent/PR-description so it can tell a *deliberate choice* from a mistake. Treats compiler/test/linter signals as high-confidence facts.
-2. **`code-review-refuter`** (VERIFY) — a **fresh-process** skeptic that tries to *refute* each candidate finding against the actual code, keeping only the defensible ones with a post-verification confidence. The separate process is the main false-positive killer: a finding and its self-refutation from the same pass share the same blind spot.
-3. **`scripts/render-review.mjs`** — deterministic gate + renderer (Node ESM or Bun, no dependencies). Drops findings below the confidence gate (`CONFIDENCE_MIN`, default 60), caps inline comments at 8, and emits a CodeRabbit-style GitHub-review payload. Verdict is `REQUEST_CHANGES` only if a surviving finding is high-severity, else a neutral `COMMENT`. A CI step posts the payload it writes — the script itself posts nothing.
+| Stage | Component | What it does |
+|-------|-----------|--------------|
+| FIND | [code-review-bot](agent-toolkit/skills/code-review-bot.md) | Emits structured findings (severity + confidence + evidence + a punchy title) to JSON. Accepts optional intent so it can tell a deliberate choice from a mistake. Posts nothing. |
+| VERIFY | [code-review-refuter](agent-toolkit/skills/code-review-refuter.md) | A **fresh-process** skeptic that tries to refute each candidate finding against the code, keeping only the defensible ones with a post-verification confidence. The separate process is the main false-positive killer. |
+| RENDER | [scripts/render-review.mjs](agent-toolkit/scripts/render-review.mjs) | Deterministic gate + renderer (Node ESM or Bun, no deps). Drops findings below the confidence gate, caps inline comments, and emits a CodeRabbit-style review payload. `REQUEST_CHANGES` only on a surviving high-severity finding, else a neutral `COMMENT`. |
 
-See [`agent-toolkit/scripts/README.md`](agent-toolkit/scripts/README.md) for the exact env inputs and outputs.
+For interactive, human-facing review, use [code-review-and-quality](agent-toolkit/skills/code-review-and-quality.md) instead.
 
-## Configuration
+---
 
-The toolkit reads your repo's conventions rather than imposing them:
+## How Skills Work
 
-- **Commands**: put your test / lint / build / type-check commands in `CLAUDE.md` or `AGENTS.md`. The agent runs whatever you define; nothing is hardcoded.
-- **Framework skills**: if your repo ships framework-specific skills under `.claude/skills/` (state management, rendering, concurrency, …), the commands load the ones matching the code being touched.
-- **`/agent-issue` labels**: issues are filed with an `agent` label by default (to fire an automated agent pipeline). No pipeline? Pick **"File as draft"** in the picker to file without the label. It also discovers your repo's real labels via `gh label list`.
-
-## Repo layout
+Every skill follows a consistent anatomy:
 
 ```
-.claude-plugin/marketplace.json        # marketplace entry → ./agent-toolkit
-agent-toolkit/
-  .claude-plugin/plugin.json           # plugin manifest
-  commands/                            # /implement /fix /refactor /agent-issue
-  skills/                              # 16 skills + the 2-skill PR-review pipeline
-  scripts/render-review.mjs            # deterministic review renderer
+┌─────────────────────────────────────────────────┐
+│  <skill>.md                                     │
+│                                                 │
+│  ┌─ Frontmatter ─────────────────────────────┐  │
+│  │ name: lowercase-hyphen-name               │  │
+│  │ description: …Use when…                   │  │
+│  └───────────────────────────────────────────┘  │
+│  Overview         → What this skill does        │
+│  When to Use      → Triggering conditions       │
+│  Process          → Step-by-step workflow       │
+│  Rationalizations → Excuses + rebuttals         │
+│  Red Flags        → Signs something's wrong     │
+│  Verification     → Evidence requirements       │
+└─────────────────────────────────────────────────┘
 ```
 
-## Attribution
+**Key design choices:**
 
-- Most process skills are **adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)** (MIT, © Addy Osmani) — `api-and-interface-design`, `code-review-and-quality`, `code-simplification`, `debugging-and-error-recovery`, `deprecation-and-migration`, `doubt-driven-development`, `git-workflow-and-versioning`, `incremental-implementation`, `interview-me`, `performance-optimization`, `planning-and-task-breakdown`, `security-and-hardening`, `test-driven-development`. Each retains an adaptation-note header pointing at the upstream source; code examples have been genericized across languages.
-- **Original to this repo**: `refactoring-strategy`, `reuse-before-you-build`, `comment-discipline`, and the automated PR-review pipeline (`code-review-bot`, `code-review-refuter`, `scripts/render-review.mjs`).
-- `refactoring-strategy` is synthesized from Fowler's *Refactoring* (2nd ed.), Feathers' *Working Effectively with Legacy Code*, Sato's Parallel Change, Humble's Branch by Abstraction, Brolund & Ellnestam's Mikado Method, Beck, Metz, Spolsky, Anthropic's `code-modernization` plugin, CodeScene's *Agentic AI Coding* patterns, Kiro's *Refactoring Made Right*, and citypaul's refactoring SKILL.md. Full source list inside the skill.
+- **Process, not prose.** Skills are workflows agents follow, not reference docs they read — steps, checkpoints, exit criteria.
+- **Anti-rationalization.** Each skill carries a table of common excuses agents use to skip steps ("I'll add tests later") with documented counter-arguments.
+- **Verification is non-negotiable.** Every workflow ends with evidence requirements — tests passing, build output, a runnable check. "Seems right" is never sufficient.
+- **Language/platform-agnostic.** Nothing hardcodes a toolchain. Commands name your test / lint / build / type-check steps *by role*; you define the concrete commands once in `CLAUDE.md` or `AGENTS.md` and the agent uses them. Works on any stack.
+- **Cost-lean by default.** The expensive paths are opt-in: adversarial review (`doubt-driven-development`) is reserved for genuinely high-stakes calls, skill files are read once and applied from memory rather than re-read per commit, and the full test/lint gate runs once at the end while each commit runs only its focused tests.
+
+---
+
+## Project Structure
+
+```
+claude-agent-toolkit/
+├── .claude-plugin/
+│   └── marketplace.json               # marketplace entry → ./agent-toolkit
+├── agent-toolkit/
+│   ├── .claude-plugin/plugin.json     # plugin manifest
+│   ├── commands/                      # 4 slash commands
+│   │   ├── agent-issue.md             #   Define
+│   │   ├── implement.md               #   Build
+│   │   ├── fix.md                     #   Fix
+│   │   └── refactor.md                #   Refactor
+│   ├── skills/                        # 16 lifecycle skills + 2-skill review pipeline
+│   └── scripts/
+│       └── render-review.mjs          # deterministic PR-review renderer
+├── README.md
+└── LICENSE
+```
+
+---
+
+## Why claude-agent-toolkit?
+
+AI coding agents default to the shortest path — skipping specs, tests, reuse checks, and the practices that make software reliable. This toolkit gives the agent structured workflows that enforce the same discipline a senior engineer brings to production code: *when* to clarify intent, *what* to test, *how* to keep a change minimal, and *when* to apply expensive scrutiny.
+
+Two things make it distinct from a generic skill pack:
+
+- **It's stack-neutral.** The same `/implement` works on a Node service, a Python CLI, or an Android app — it reads your repo's conventions instead of imposing one toolchain.
+- **It's tuned for cost.** Every heavy step earns its keep. Adversarial review and full-suite verification are deliberate, not reflexive, so a routine feature doesn't quietly cost ten times what it should.
+
+The process skills are adapted from Addy Osmani's [agent-skills](https://github.com/addyosmani/agent-skills) — genericized across languages and trimmed for token cost — alongside original work: a tier-gated `refactoring-strategy`, a symbol-level `reuse-before-you-build` gate, and the adversarial FIND → VERIFY PR-review pipeline.
+
+---
+
+## Contributing
+
+Skills should be **specific** (actionable steps, not vague advice), **verifiable** (clear exit criteria with evidence requirements), **language-agnostic** (name tools by role, not by toolchain), and **minimal** (only what's needed to guide the agent — every line costs tokens on every run).
+
+---
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+MIT — use these commands and skills in your projects, teams, and tools. See [LICENSE](./LICENSE).
