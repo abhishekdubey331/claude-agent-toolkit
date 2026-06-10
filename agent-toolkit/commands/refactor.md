@@ -123,7 +123,7 @@ If any box is unchecked, do not stop.
 
 - **Behavior must not change.** Anything that changes behavior belongs in a separate `feat:` or `fix:` commit. Two Hats.
 - **Branch off `main` at task start.** If `main` is checked out, `git switch -c refactor/<slug>` before any commit. If on another non-default branch, ask before extending. Stay-on-main is the failure mode.
-- **Push + open a PR at the end of Phase 6.** `git push -u origin <branch>` then `gh pr create --base main`. PR body includes the tier classification and refactor plan.
+- **Push + open a PR at the end of Phase 6.** `git push -u origin <branch>` then `gh pr create --base main`. PR body includes the tier classification, the refactor plan, and a one-line **Risk: low/medium/high** (blast radius + reversibility).
 - **Never edit existing tests** unless characterization tests are explicitly part of Phase 2's prep. Adding new tests during the refactor is fine.
 - **Never delete code older than the project's history can explain.** Chesterton's Fence — if you can't say why it was put there, leave it.
 - **No Big Rewrite.** Strangler Fig / Branch by Abstraction always wins. If the plan starts to look like "rewrite this module from scratch", STOP and reclassify as T3 with the user.

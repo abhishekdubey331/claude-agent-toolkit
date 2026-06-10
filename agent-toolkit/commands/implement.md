@@ -162,7 +162,11 @@ If any box is unchecked, do not stop. Address it.
 Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
 - **Branch off `main` at task start.** If `main` is checked out, `git switch -c feat/issue-<N>-<slug>` (or `fix/<slug>` for a defect) before any commit. If on another non-default branch, ask before extending — it may belong to another task. Stay-on-main is the failure mode.
-- **Push + open a PR at the end of Phase 7.** `git push -u origin <branch>` then open a PR against `main` (e.g. `gh pr create --base main`). PR body notes any high-stakes-decision outcomes from Phase 4 step 4 (if there were any). Return the PR URL to the user.
+- **Push + open a PR at the end of Phase 7.** `git push -u origin <branch>` then open a PR against `main` (e.g. `gh pr create --base main`). Return the PR URL to the user. Keep the PR body to four short sections so a reviewer can target their attention:
+  - **Intent** — what this set out to do, plus any deliberate decision a diff-reader would otherwise misread as a mistake (a knowingly-removed guard, an intentional API change). Fold in any high-stakes-decision outcomes from Phase 4 step 4 here, if there were any.
+  - **What changed** — 1–3 bullets.
+  - **Risk** — `low` / `medium` / `high`, one line why (blast radius, reversibility). Reviewers spend time proportional to this.
+  - **Testing** — what you ran + any evidence; flag anything you couldn't verify.
 - **Never edit existing tests** under `**/test/`, `*Test.*`, `*_test.*`, `*.test.*`, `tests/` unless the task explicitly asks. Adding new tests is encouraged.
 - **Never edit files under `.github/`** — CODEOWNERS gates this anyway.
 - **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
