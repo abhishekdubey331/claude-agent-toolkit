@@ -39,6 +39,8 @@ When anything unexpected happens:
 
 Work through these steps in order. Do not skip steps.
 
+**Hard cap:** if the Reproduce→Verify loop repeats more than 3 times on the same failure/scope without resolving, STOP. Do not grind a fourth pass. Escalate to the user with a "what I tried" summary (the list of attempts and their outcomes) so they can redirect.
+
 ### Step 1: Reproduce
 
 Make the failure happen reliably. If you can't reproduce it, you can't fix it with confidence.
