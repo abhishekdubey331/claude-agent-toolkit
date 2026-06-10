@@ -79,8 +79,8 @@ For each commit in the plan, run this loop **in order**. Do not skip steps; do n
    - Defensive null-checks the type system already guarantees
    - Single-use helpers introduced as scaffolding that can now be inlined
    - Comments restating what the code says
-3. **Doubt-driven check (conditional)** — for any commit that lands a non-trivial decision (new abstraction, dependency flip, irreversible mechanical change), invoke `.claude/skills/doubt-driven-development.md` and reconcile findings BEFORE the commit.
-4. **Run the test suite and linter** for the touched files. All GREEN. Coverage must be ≥ pre-refactor (refactoring-strategy.md guardrail). If a simplification required a test change, **revert the simplification, not the test** — you changed behavior.
+3. **High-stakes decision check (rare)** — only for a genuinely high-stakes step (introducing a new public abstraction, an irreversible mechanical change, a dependency inversion you can't easily undo), apply `.claude/skills/doubt-driven-development.md` and note the outcome. Mechanical, test-covered refactor steps skip this — the green suite plus unchanged coverage is the proof.
+4. **Run the focused tests covering this commit's change.** They must stay GREEN (refactoring keeps behavior identical, so a red test means you broke something). Don't re-run the whole suite or the linters every commit — the full suite, linters, and coverage check run once in Phase 5. If a simplification required a test change, **revert the simplification, not the test** — you changed behavior.
 5. **Commit** — Conventional Commits subject names the pattern: `refactor: extract method renderHeader`, `refactor: parallel-change step 2/3 (migrate callers)`, `refactor: introduce Repository abstraction`. Body explains the *why*. Subject ≤ 60 chars.
 
 The simplify-before-commit order is non-negotiable. Refactor commits accumulate noise fast otherwise.
@@ -109,7 +109,7 @@ If anything's unclean, fix in a final commit — itself subjected to the Phase 4
 - [ ] Blast radius was estimated by searching for callers on any T2/T3 change
 - [ ] Two Hats Rule held — no behavior changes hidden inside refactor commits
 - [ ] Simplify mini-pass ran BEFORE every commit (Phase 4 step 2)
-- [ ] Doubt-driven-development was invoked for any non-trivial decision
+- [ ] Any genuinely high-stakes decision (new public abstraction, irreversible mechanical change, hard-to-undo dependency inversion) was checked; routine test-covered steps skip it
 - [ ] Coverage ≥ pre-refactor; no test was deleted, weakened, or given a skip/ignore annotation (e.g. `@Disabled` / `it.skip` / `@pytest.mark.skip`)
 - [ ] Every commit subject uses `refactor:` prefix and names the pattern; ≤ 60 chars
 - [ ] No drive-by reformatting; no adjacent-code "improvements"
