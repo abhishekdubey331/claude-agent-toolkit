@@ -107,6 +107,8 @@ CONTRACT: <paste contract>
 
 **Pass ARTIFACT + CONTRACT only. Do NOT pass the CLAIM.** Handing the reviewer your conclusion biases it toward agreement. The reviewer must independently determine whether the artifact satisfies the contract.
 
+For high-stakes calls (irreversible blast radius, security-sensitive), contrast ~5 candidate critiques instead of a single pass, then reconcile across them. Accuracy saturates around ~10 — never exceed it; more is wasted tokens.
+
 In Claude Code, the role-based reviewers in `agents/` start with isolated context by design and are usable here — see `agents/` for the roster and per-domain match.
 
 **The adversarial prompt above takes precedence over the persona's default response shape.** Personas like `code-reviewer` are written to produce balanced verdicts with both strengths and weaknesses; doubt-driven needs issues-only output. Paste the adversarial prompt verbatim into the invocation so it overrides the persona's default. If a persona's response shape can't be overridden cleanly, fall back to a generic subagent with the adversarial prompt.

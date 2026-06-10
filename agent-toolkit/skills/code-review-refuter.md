@@ -31,6 +31,9 @@ Attempt to **refute** every finding:
 - **Drop** if: the cited line doesn't support the claim, the symbol/behavior is
   actually fine, the scenario isn't reachable, it's speculative, it contradicts a
   repo convention, or you can't verify it. **When uncertain, drop.**
+- For a high-severity/high-stakes finding, contrast ~5 candidate refutation lines
+  of reasoning (not one trajectory) before the keep/drop verdict; cap at ~10
+  (accuracy saturates). If any line refutes it credibly, default to dropping.
 - Compiler/test failures in `$SIGNALS_FILE` corroborate matching findings — keep
   those and you may raise their confidence.
 

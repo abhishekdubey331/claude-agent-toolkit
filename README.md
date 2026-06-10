@@ -129,6 +129,10 @@ A headless, CI-friendly reviewer built from **two `claude -p` stages + a determi
 
 For interactive, human-facing review, use [code-review-and-quality](agent-toolkit/skills/code-review-and-quality.md) instead.
 
+### The gate model
+
+The workflow's own gates — local verify, per-commit checks — are model-driven and **advisory**: fast feedback, not enforcement. The load-bearing gate is the **consumer's server-side gate** — CI plus branch protection — which the agent cannot bypass. So the agent hands the PR to that gate; it never declares a change "safe to merge."
+
 ---
 
 ## How Skills Work
@@ -159,6 +163,13 @@ Every skill follows a consistent anatomy:
 - **Verification is non-negotiable.** Every workflow ends with evidence requirements — tests passing, build output, a runnable check. "Seems right" is never sufficient.
 - **Language/platform-agnostic.** Nothing hardcodes a toolchain. Commands name your test / lint / build / type-check steps *by role*; you define the concrete commands once in `CLAUDE.md` or `AGENTS.md` and the agent uses them. Works on any stack.
 - **Cost-lean by default.** The expensive paths are opt-in: adversarial review (`doubt-driven-development`) is reserved for genuinely high-stakes calls, skill files are read once and applied from memory rather than re-read per commit, and the full test/lint gate runs once at the end while each commit runs only its focused tests.
+
+**Running at scale — operator notes:**
+
+- **Split models by phase.** Route mechanical phases — commit-message authoring, log parsing, the simplify mini-pass — to a cheap model; reserve the strong model for planning and doubt-driven review.
+- **Prompt-cache the stable prefix.** The skills, your `CLAUDE.md` conventions, and the AC checklist are stable across the run — cache them.
+- **Loops are bounded.** Per-commit and triage loops cap at 3 cycles on the same scope, then stop or escalate — removing the main silent cost blowout.
+- **Keep the human backstop.** One human approval gates merge; do not auto-merge at scale.
 
 ---
 
