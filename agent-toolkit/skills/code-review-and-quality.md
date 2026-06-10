@@ -208,7 +208,7 @@ This catches issues that a single model might miss — different models have dif
 ```
 Review this code change for correctness, security, and adherence to
 our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Important, or Suggestion.
+Flag any issues as Critical, Required, or Optional.
 ```
 
 ## Dead Code Hygiene
@@ -319,8 +319,8 @@ Part of code review is dependency review:
 ```
 ## See Also
 
-- For detailed security review guidance, see `references/security-checklist.md`
-- For performance review checks, see `references/performance-checklist.md`
+- For detailed security review guidance, see the `security-and-hardening` skill
+- For performance review checks, see the `performance-optimization` skill
 
 ## Common Rationalizations
 
@@ -348,7 +348,7 @@ Part of code review is dependency review:
 After review is complete:
 
 - [ ] All Critical issues are resolved
-- [ ] All Important issues are resolved or explicitly deferred with justification
+- [ ] All Required issues are resolved or explicitly deferred with justification
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)

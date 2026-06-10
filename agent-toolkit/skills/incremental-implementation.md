@@ -118,7 +118,7 @@ Three similar lines of code is better than a premature abstraction. Implement th
 
 Before introducing any new symbol, scan for an existing sibling first. The right action — **reuse / extend / mirror / new** — depends on the symbol's category: shared primitives default to REUSE/EXTEND; pattern-instance components default to MIRROR; per-feature units (controllers, screen entry points, per-feature state types) default to NEW per feature + mirror structure. Inventing where you should reuse and reusing where you should create new are equally wrong. Attest the bucket default and your choice in the commit body — silent invention is the failure mode this rule exists to catch.
 
-Full 4-bucket table + four-step gate: see `reuse-before-you-build.md`.
+Full 4-bucket table + four-step gate: see the `reuse-before-you-build` skill.
 
 ### Rule 0.5: Scope Discipline
 

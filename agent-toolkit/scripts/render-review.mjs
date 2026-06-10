@@ -69,8 +69,15 @@ export function renderReview({ findingsDoc, verifiedDoc, diffText, confidenceMin
 
   const body = renderBody(findingsDoc || {}, { droppedFindings, cappedCount, includedFiles, postedCount: comments.length });
 
-  // A surviving high-severity finding blocks regardless of the inline cap.
-  const blocking = anchored.filter((x) => x.severity === "high").length;
+  // A surviving high-severity finding blocks regardless of the inline cap — and
+  // regardless of whether it could anchor. A real high whose cited line falls
+  // outside the diff is routed to the outside-diff section, not posted inline,
+  // but it must still flip the verdict to REQUEST_CHANGES rather than be silently
+  // demoted to a neutral COMMENT.
+  const isHigh = (sev) => String(sev || "").toLowerCase() === "high";
+  const blocking =
+    anchored.filter((x) => x.severity === "high").length +
+    droppedFindings.filter((d) => isHigh(d.raw?.severity)).length;
   const event = blocking > 0 ? "REQUEST_CHANGES" : "COMMENT";
 
   return {
@@ -143,7 +150,7 @@ function headerPills({ severity, category, hasSuggestion }) {
 }
 
 function deriveTitle(raw) {
-  if (typeof raw.title === "string" && raw.title.trim()) return raw.title.trim().replace(/[.!]+$/, "");
+  if (typeof raw.title === "string" && raw.title.trim()) return raw.title.trim().replace(/[.!?]+$/, "");
   const b = String(raw.body || "").trim();
   if (!b) return "Issue";
   return b.split(/(?<=[.!?])\s+/)[0].replace(/[.!?]+$/, "").slice(0, 120);
@@ -169,7 +176,10 @@ function normalizeComment(raw, validLinesByPath, lineTextByPath) {
   const catRaw = String(raw.category || "").toLowerCase();
   const category = CATEGORY_LABEL[catRaw] ? catRaw : null;
 
-  let suggestion = typeof raw.suggestion === "string" ? raw.suggestion.replace(/\s+$/, "") : null;
+  // A snapped line means the cited line wasn't in the diff; a committable
+  // ```suggestion block replaces the commented line, so emitting one against the
+  // snapped neighbor would rewrite a line the finding never intended. Drop it.
+  let suggestion = !snapped && typeof raw.suggestion === "string" ? raw.suggestion.replace(/\s+$/, "") : null;
   if (suggestion === "" ) suggestion = null;
   else if (suggestion && suggestion.includes("```")) suggestion = null;
   else if (suggestion) { const orig = lineTextByPath.get(raw.path)?.get(line); if (orig != null && suggestion === orig) suggestion = null; }

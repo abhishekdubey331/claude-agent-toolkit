@@ -9,7 +9,7 @@ description: Extracts what the user actually wants instead of what they think th
 
 ## Adaptation note for this repo
 
-The skill content below is adapted from upstream (dangling cross-references to skills not bundled here removed). We use it in this repo as the pre-flight for the `agent`-labeled pipeline — invoked by the `/agent-issue` slash command to close the "vague issue → wasted implementer turns" gap before any worktree spins up. See [`.claude/commands/agent-issue.md`](../commands/agent-issue.md) for how it composes with `gh issue create`.
+The skill content below is adapted from upstream (dangling cross-references to skills not bundled here removed). We use it in this repo as the pre-flight for the `agent`-labeled pipeline — invoked by the `/agent-issue` slash command to close the "vague issue → wasted implementer turns" gap before any worktree spins up. See [the `/agent-issue` command](../commands/agent-issue.md) for how it composes with `gh issue create`.
 
 ## Overview
 
@@ -187,7 +187,6 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 
 - **`planning-and-task-breakdown`**: downstream. Once intent is confirmed, planning-and-task-breakdown converts it into an ordered task list.
 - **`doubt-driven-development`**: opposite end of the timeline. Interview-me is pre-decision intent extraction; doubt-driven is post-decision artifact review. Both catch divergence, but at different moments.
-- **`source-driven-development`**: orthogonal. Interview-me clarifies what the user wants; SDD verifies framework facts. They don't compete.
 
 ## Common Rationalizations
 

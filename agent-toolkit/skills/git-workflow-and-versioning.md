@@ -193,7 +193,7 @@ Agent starts work
     └── Feature complete → All commits form a clean history
 ```
 
-This pattern means you never lose more than one increment of work. If an agent goes off the rails, `git reset --hard HEAD` takes you back to the last successful state.
+This pattern means you never lose more than one increment of work. If an agent goes off the rails, `git restore` (uncommitted changes) or `git revert` (a bad commit) takes you back to the last successful state without discarding history. Avoid `git reset --hard` — the `/implement`, `/fix`, and `/refactor` commands list it as a never-do destructive op precisely because it can erase un-pushed work.
 
 ## Change Summaries
 
