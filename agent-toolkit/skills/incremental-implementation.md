@@ -5,25 +5,6 @@ description: Delivers changes incrementally. Use when implementing any feature o
 
 > Adapted from [addyosmani/agent-skills/skills/incremental-implementation/SKILL.md](https://github.com/addyosmani/agent-skills/blob/main/skills/incremental-implementation/SKILL.md) — MIT-licensed, © Addy Osmani.
 
-## Adaptation note for this repo
-
-The skill content below is unmodified from upstream; this section adds the two adaptations needed when reading it in this repo:
-
-- **Stack-specific commands.** Examples below use npm/Node. For this Android
-  Kotlin codebase substitute:
-  - `npm test` / `npm run test` → `./gradlew testDebugUnitTest`
-  - `npm run build` → `./gradlew assembleDebug`
-  - `npm run lint` → `./gradlew detekt` (and/or `./gradlew ktlintCheck`)
-  - `npx tsc --noEmit` → not applicable; kotlinc runs as part of the build
-  - `npm audit` → no direct equivalent; review `app/build.gradle.kts` and
-    `gradle/libs.versions.toml` for dependency hygiene
-
-- **Cross-references to other Addy skills** (e.g. `git-workflow-and-versioning`,
-  `references/orchestration-patterns.md`). The full upstream skill set was
-  not imported — only the three currently in `.claude/skills/`. Apply the
-  conceptual principle when referenced; the explicit cross-references will
-  not resolve here.
-
 # Incremental Implementation
 
 ## Overview
@@ -139,54 +120,53 @@ Before introducing any new symbol, scan for an existing sibling. The CORRECT act
 
 The four category buckets and their defaults:
 
-| Bucket | Examples | Default when sibling exists |
+| Bucket | Examples | Default when a sibling exists |
 |---|---|---|
-| Shared primitives | UI primitives, UseCases, DTOs, copy/tokens/test-tags, error mappers, formatters, test fakes | **REUSE / EXTEND** |
-| Pattern-instance composables | sheets / dialogs / cards built FROM the primitives | **MIRROR** (new instance, same shell + primitives) |
-| Per-destination units | `*Route`, `*Screen`, `*ViewModel`, per-VM sealed UI states | **NEW per route** + mirror structure only |
-| First-of-its-kind | no precedent in the codebase | **NEW** (you're setting precedent) |
+| **Shared primitives** | utilities/helpers, value types & DTOs, shared UI primitives, constants/strings/tokens, error mappers, formatters, test fakes/builders | **REUSE / EXTEND** |
+| **Pattern-instance components** | things built FROM the primitives following an existing template (dialogs, cards, forms, list rows, request handlers) | **MIRROR** an existing sibling |
+| **Per-feature / per-route units** | a feature's entry point/screen, its controller/view-model/presenter, its local state type | **NEW per feature** + mirror structure only |
+| **First-of-its-kind** | no precedent | **NEW** (setting precedent) |
 
 Per slice that introduces a symbol:
 
-1. **Graph search first.** `semantic_search_nodes` for the domain noun + likely suffix (`*Sheet`, `*ViewModel`, `*UseCase`, `*Repository`, `*Dto`, `*Mapper`). `query_graph` for `callers_of` / `imports_of` the closest neighbor. Walk the canonical homes for your category.
-2. **Identify the bucket.** The bucket determines the default. Two failure modes are equally bad: inventing where you should have reused (shared-primitive bucket); reusing where you should have created new (per-destination bucket — sharing a VM across destinations, cloning a sealed UiState across unrelated VMs, hosting one screen's logic in another's composable).
-3. **Apply the default UNLESS you have a stated reason to deviate.** Deviations are legitimate (Activity-scoped VM, cross-cutting sealed-state base) but must be stated, not silent.
+1. **Search the codebase first.** Search for the domain noun + likely suffix using grep, find-references, or a code-search tool. Check callers and importers of the closest neighbor. Walk the canonical homes for your category.
+2. **Identify the bucket.** The bucket determines the default. Two failure modes are equally bad: inventing where you should have reused (shared-primitive bucket); reusing where you should have created new (per-feature unit bucket — sharing a controller across unrelated features, or hosting one feature's logic inside another's entry point).
+3. **Apply the default UNLESS you have a stated reason to deviate.** Deviations are legitimate but must be stated, not silent.
 4. **Attest in the commit body.** One line per new symbol naming the bucket default and your choice. Empty attestation = the failure mode this rule exists to catch.
 
 ```
 REUSE CHECK (shared primitive — default REUSE/EXTEND):
-✗ New ModalBottomSheet with custom Column + AppPrimaryButton pair
-✓ Shared BottomSheet shell + BottomSheetPrimaryAction + BottomSheetDeferredAction
+✗ New modal re-implementing the shared dialog shell + buttons
+✓ Reuse shared dialog shell + action primitives
 
-✗ New polling UseCase re-implementing backoff + correlation-id threading
-✓ Extend the existing polling UseCase, or factor the policy into a shared helper
+✗ New polling routine re-implementing backoff + correlation-id threading
+✓ Extend the existing polling utility, or factor the policy into a shared helper
 
 ✗ New "Not now" string literal in a fresh copy object
-✓ SharedCopy.NOT_NOW
+✓ Reuse the shared strings constant
 
-✗ New domain-specific ErrorResponseDto with a slightly different field name
-✓ Reuse the existing ErrorResponseDto; add the variant via the sealed mapper
+✗ New error type duplicating an existing one with a slightly different field name
+✓ Reuse the existing error type; add the variant via the shared mapper
 
-✗ New FakePdfRepository hand-rolling state when FakeQuizRepository already has the pattern
-✓ Mirror FakeQuizRepository's structure, or extend its base
+✗ New fake hand-rolling state when a sibling fake already has the pattern
+✓ Mirror the sibling fake's structure, or extend its base
 
-REUSE CHECK (pattern-instance composable — default MIRROR):
-✗ New rewarded-unlock sheet that looks nothing like the existing DailyLimitSheet
-✓ New sheet built as a structural sibling: same shell + primitives + icon-card header
+REUSE CHECK (pattern-instance component — default MIRROR):
+✗ New component that ignores the established shell + primitives pattern
+✓ New component built as a structural sibling: same shell + primitives
 
-REUSE CHECK (per-destination unit — default NEW per route + mirror structure):
-✗ One ViewModel shared across two unrelated nav destinations (silent, no justification)
-✓ Two new VMs per destination, mirrored layering. Deviation only with explicit
-  "Activity-scoped because X" rationale.
+REUSE CHECK (per-feature unit — default NEW per feature + mirror structure):
+✗ One controller shared across two unrelated features (silent, no justification)
+✓ Two new controllers per feature, mirrored layering. Deviation only with explicit rationale.
 
-✗ New screen composable hosting another screen's logic inline
-✓ New screen; navigate to the other route; mirror the existing screen's scaffold + VM injection
+✗ New feature entry point hosting another feature's logic inline
+✓ New entry point; delegate to the other feature; mirror the existing feature's structure
 
-✗ Sealed UiState cloned identically across multiple unrelated VMs
-✓ Share a base only if the concept is cross-cutting; otherwise keep per-VM types diverged
+✗ Local state type cloned identically across multiple unrelated features
+✓ Share a base only if the concept is cross-cutting; otherwise keep per-feature types diverged
 ```
 
-If no sibling exists in the shared-primitive bucket, that's a signal to ASK before inventing. If you're in the per-destination bucket and NEW is the default, no question needed — just attest the bucket and the mirroring decision. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
+If no sibling exists in the shared-primitive bucket, that's a signal to ASK before inventing. If you're in the per-feature unit bucket and NEW is the default, no question needed — just attest the bucket and the mirroring decision. See `reuse-before-you-build.md` for the full four-step gate and red-flag list.
 
 ### Rule 0.5: Scope Discipline
 
@@ -266,7 +246,7 @@ When directing an agent to implement incrementally:
 Start with just the database schema change and the API endpoint.
 Don't touch the UI yet — we'll do that in the next increment.
 
-After implementing, run `npm test` and `npm run build` to verify
+After implementing, run the project's test suite and build to verify
 nothing is broken."
 ```
 
@@ -277,10 +257,10 @@ Be explicit about what's in scope and what's NOT in scope for each increment.
 After each increment, verify:
 
 - [ ] The change does one thing and does it completely
-- [ ] All existing tests still pass (`npm test`)
-- [ ] The build succeeds (`npm run build`)
-- [ ] Type checking passes (`npx tsc --noEmit`)
-- [ ] Linting passes (`npm run lint`)
+- [ ] All existing tests still pass (run the project's test suite)
+- [ ] The build succeeds (run the project's build command)
+- [ ] Type checking passes (run the type checker, if the language has one)
+- [ ] Linting passes (run the linter)
 - [ ] The new functionality works as expected
 - [ ] The change is committed with a descriptive message
 

@@ -106,7 +106,7 @@ Transform the restated intent into this exact structure:
 `agent`, `<area:...>`, `<type:...>`, `<severity:... if bug>`
 ```
 
-Suggest labels from this repo's actual label set: `area:auth`, `area:create`, `area:player`, `area:ads`, `area:today`, `area:data`, `area:nav`, `area:threading`, `area:notifications`, `area:review-prompt`; `type:feature`, `type:instrumentation`; `severity:critical/high/medium`; plus `agent` (required for pipeline trigger).
+Discover the repo's real labels first by running `gh label list`, then suggest the best-fitting labels from that output. If the repo has no relevant labels yet, fall back to generic placeholders: `area:<x>`, `type:feature|bug|chore`, `severity:critical|high|medium`. Always include `agent` (required for pipeline trigger).
 
 Notes for the issue body:
 - **No file paths or line numbers.** They go stale and the implementer should find the right place via the codebase. The exception is when the finding is specifically about a known location.
@@ -170,7 +170,7 @@ Throw away. Confirm to the user.
 - **Read `interview-me.md` before Phase 1.** The protocol's discipline (anchored questions, confidence numbers, out-of-scope gate) is what makes this useful. If you skip the protocol and just bulk-ask, you'll produce mediocre issues.
 - **Stay interactive.** Don't fall back to assumptions. If the user gives a one-word answer, ask the follow-up that disambiguates.
 - **Don't file with `agent` label without explicit user "yes" in Phase 4.** That label is the pipeline trigger; firing it by accident burns runner minutes + the post-June-15 Agent SDK credit.
-- **Don't fabricate context.** If you don't know which `area:*` label fits, ask the user which area the change touches.
+- **Don't fabricate context.** Run `gh label list` to see real labels. If it's still unclear which area label fits, ask the user which area the change touches.
 - **No file paths in the issue body** unless the user explicitly gave one in the interview. The implementer should discover the right location from the acceptance criteria.
 
 ---

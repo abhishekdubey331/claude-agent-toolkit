@@ -54,7 +54,7 @@ Update later:
 
 ## Notes
 
-- `/implement` and `/fix` were originally written for an Android + Jetpack Compose codebase (gradle test commands, Compose-specific simplify rules). When using on a non-Android project, you'll want to swap `./gradlew testDebugUnitTest` → your project's test command. Customize per-repo by copying into `.claude/commands/` and editing.
+- The commands and skills are **language- and platform-agnostic**. They refer to "the project's test command", "the linter", "the type checker", etc. by role rather than hardcoding a toolchain — define the concrete commands in your repo's `CLAUDE.md` / `AGENTS.md` and the agent will use them. (If a project ships framework-specific skills under `.claude/skills/`, the commands will load the ones matching the code being touched.)
 - `/agent-issue` files issues with an `agent` label by default (for an automated agent pipeline). If you don't have that pipeline, pick "File as draft" in the picker to file without the label.
 
 ## Attribution

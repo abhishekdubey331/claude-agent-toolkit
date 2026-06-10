@@ -11,7 +11,7 @@ description: Strategic refactoring playbook for AI agents. Use when restructurin
 
 This skill is **strategy**. Pair with:
 
-- **`refactor-safely.md`** (if present) — the **mechanics** layer (graph-aware MCP tools: `refactor_tool`, `query_graph`, `get_impact_radius`).
+- **`refactor-safely.md`** (if present) — the **mechanics** layer (deterministic refactoring tooling: language-server rename/move-file, `ast-grep`, codemods, or any graph-aware / find-references code-search your stack provides).
 - **`code-simplification.md`** — the **cleanup** layer (clarity-only post-refactor pass; no behavior change).
 
 Canonical sequence: **Strategy (this skill) → Mechanics → Cleanup.**
@@ -169,7 +169,7 @@ The answer to *"but there are no tests."*
 
 1. **Tier-gate FIRST.** Classify before touching code. T3 stops and asks the human.
 2. **Prefer deterministic tooling over LLM text-rewriting.** Use language-server rename, IDE move-file, ast-grep, codemods. Agents hallucinate imports and miss callers across files. Don't text-replace what an LSP can do safely.
-3. **Use the code graph for blast radius.** Before any T2/T3 change: `get_impact_radius`, `query_graph(pattern=callers_of)`, `get_affected_flows`. Verify the change touches what you expect — no more, no less.
+3. **Map the blast radius before you change anything.** Before any T2/T3 change, find every caller/importer of the symbol (language-server find-references, `grep`, ast-grep, or any code-search/graph tool your stack provides). Verify the change touches what you expect — no more, no less.
 4. **Plan mode before Act mode.** For T2/T3: write a Mikado-style prerequisite list (notes file or PR-body draft), get human ack on T3, *then* execute.
 5. **State-file checkpoints on long refactors.** Every few commits, append to `notes.md`: done / open / decisions / tricky parts. The next session can resume without re-reading the whole diff.
 6. **Coverage as guardrail.** Coverage must be ≥ pre-refactor. Never delete or weaken tests during a refactor — that turns a refactor into an unobservable behavior change.
@@ -183,7 +183,7 @@ The answer to *"but there are no tests."*
 
 **T2, callers ≥ 5 → Parallel Change.**
 
-1. `query_graph(pattern=callers_of, target=<function>)` — confirm the 8 callers (don't trust your eyeballs)
+1. Find every caller of the function (find-references / `grep` / ast-grep) — confirm all 8 (don't trust your eyeballs)
 2. **Expand:** add new function with the correct name; it delegates to old. *Commit:* `refactor: introduce <newName> wrapping <oldName>`. Tests GREEN.
 3. **Migrate:** update callers in 1–2 commits (group by package if possible). *Commit:* `refactor: migrate <module> callers to <newName>`. Tests GREEN between commits.
 4. **Contract:** delete the old function. *Commit:* `refactor: remove deprecated <oldName>`. Tests GREEN.

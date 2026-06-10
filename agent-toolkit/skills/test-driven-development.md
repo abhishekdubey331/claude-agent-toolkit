@@ -9,7 +9,7 @@ description: Drives development with tests. Use when implementing any logic, fix
 
 ## Adaptation note for this repo
 
-Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across both `android-app` and `backend` projects.
+Adapted from upstream — core guidance unchanged; illustrative code examples genericized across languages. Bundled in the `agent-toolkit` plugin for use across any project, regardless of language or platform.
 
 
 ## Overview
@@ -381,7 +381,7 @@ For detailed testing patterns, examples, and anti-patterns across frameworks, se
 After completing any implementation:
 
 - [ ] Every new behavior has a corresponding test
-- [ ] All tests pass: `npm test`
+- [ ] All tests pass (run the project's test suite)
 - [ ] Bug fixes include a reproduction test that failed before the fix
 - [ ] Test names describe the behavior being verified
 - [ ] No tests were skipped or disabled

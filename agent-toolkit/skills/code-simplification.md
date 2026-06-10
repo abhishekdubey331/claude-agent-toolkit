@@ -128,8 +128,8 @@ If you can't answer these, you're not ready to simplify. Read more context first
 
 The local test suite only sees in-process behaviour. State that looks dead inside one file can still be load-bearing if it crosses a **system boundary** the tests don't observe. Before deleting any field, property, or argument, ask:
 
-- **Server / wire payload?** — does this field end up serialised onto an HTTP request / response, gRPC message, or queue payload? (Look for `@Json`, `@SerialName`, DTO mappers, OkHttp body builders.) If yes, the server may rely on it even if no Kotlin code reads it back.
-- **Persisted store?** — does this back a DataStore key, Room column, SharedPreferences entry, file on disk, or KeyStore alias? If yes, deletion is a schema change.
+- **Server / wire payload?** — does this field end up serialised onto an HTTP request / response, gRPC message, or queue payload? (Look for serialization annotations/attributes, DTO mappers, request-body builders.) If yes, the server may rely on it even if no local code reads it back.
+- **Persisted store?** — does this back a database column, key-value/preferences entry, cache key, file on disk, or secret-store alias? If yes, deletion is a schema change.
 - **Third-party SDK callback?** — is the value passed into a method that hands it to a closed-source SDK (ad networks, analytics, Firebase, push providers)? If yes, the SDK may correlate it across calls in ways your unit tests can't see.
 - **Idempotency / correlation key?** — `clientRequestId`, `requestId`, `eventId`, `dedupeKey`, `nonce`. These are typically held across retries deliberately; removing one re-issues a fresh key per attempt and breaks server-side dedupe.
 - **Analytics / monitoring property?** — drops a dashboard query silently with no test fixture to catch it.

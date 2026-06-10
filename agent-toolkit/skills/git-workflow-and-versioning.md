@@ -9,7 +9,7 @@ description: Structures git workflow practices. Use when making any code change.
 
 ## Adaptation note for this repo
 
-Included verbatim from upstream. Bundled in the `agent-toolkit` plugin for use across both `android-app` and `backend` projects.
+Adapted from upstream — core guidance unchanged; illustrative code examples genericized across languages. Bundled in the `agent-toolkit` plugin for general use across projects on any language or platform.
 
 
 ## Overview
@@ -78,11 +78,11 @@ Commit messages explain the *why*, not just the *what*:
 feat: add email validation to registration endpoint
 
 Prevents invalid email formats from reaching the database.
-Uses Zod schema validation at the route handler level,
-consistent with existing validation patterns in auth.ts.
+Uses schema validation at the route handler boundary,
+consistent with existing validation patterns in the auth module.
 
 # Bad: Describes what's obvious from the diff
-update auth.ts
+update auth module
 ```
 
 **Format:**
@@ -202,15 +202,15 @@ After any modification, provide a structured summary. This makes review easier, 
 ```
 CHANGES MADE:
 - src/routes/tasks.ts: Added validation middleware to POST endpoint
-- src/lib/validation.ts: Added TaskCreateSchema using Zod
+- src/lib/validation.ts: Added TaskCreateSchema using the project's validation library
 
 THINGS I DIDN'T TOUCH (intentionally):
 - src/routes/auth.ts: Has similar validation gap but out of scope
 - src/middleware/error.ts: Error format could be improved (separate task)
 
 POTENTIAL CONCERNS:
-- The Zod schema is strict — rejects extra fields. Confirm this is desired.
-- Added zod as a dependency (72KB gzipped) — already in package.json
+- The schema is strict — rejects extra fields. Confirm this is desired.
+- Validation library was already a dependency — no new dependency added
 ```
 
 This pattern catches wrong assumptions early and gives reviewers a clear map of the change. The "DIDN'T TOUCH" section is especially important — it shows you exercised scope discipline and didn't go on an unsolicited renovation.
@@ -226,33 +226,29 @@ git diff --staged
 # 2. Ensure no secrets
 git diff --staged | grep -i "password\|secret\|api_key\|token"
 
-# 3. Run tests
-npm test
+# 3. Run the test suite
+#    e.g. npm test / pytest / cargo test / go test ./... / bundle exec rspec
 
-# 4. Run linting
-npm run lint
+# 4. Run the linter
+#    e.g. npm run lint / ruff check . / cargo clippy / golangci-lint run
 
-# 5. Run type checking
-npx tsc --noEmit
+# 5. Run static type checking (where applicable)
+#    e.g. npx tsc --noEmit / mypy . / cargo check
 ```
 
-Automate this with git hooks:
+Automate this with git hooks using your ecosystem's hook manager:
 
-```json
-// package.json (using lint-staged + husky)
-{
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,md}": ["prettier --write"]
-  }
-}
-```
+- **Node.js:** lint-staged + husky (`package.json`)
+- **Python:** pre-commit framework (`.pre-commit-config.yaml`)
+- **Go/Rust/other:** a plain `.git/hooks/pre-commit` shell script works universally
+
+The goal is the same regardless of tool: no secrets, tests green, lint clean before the commit lands.
 
 ## Handling Generated Files
 
-- **Commit generated files** only if the project expects them (e.g., `package-lock.json`, Prisma migrations)
-- **Don't commit** build output (`dist/`, `.next/`), environment files (`.env`), or IDE config (`.vscode/settings.json` unless shared)
-- **Have a `.gitignore`** that covers: `node_modules/`, `dist/`, `.env`, `.env.local`, `*.pem`
+- **Commit generated files** only if the project expects them (e.g., lockfiles such as `package-lock.json`, `Pipfile.lock`, `Cargo.lock`, `go.sum`; migration files)
+- **Don't commit** build output (`dist/`, `target/`, `__pycache__/`, `.next/`), environment files (`.env`), or IDE config (unless shared with the team)
+- **Have a `.gitignore`** that covers your ecosystem's equivalents of: dependency caches (`node_modules/`, `.venv/`, `vendor/`), build artifacts, `.env`, `.env.local`, `*.pem`
 
 ## Using Git for Debugging
 
@@ -291,7 +287,7 @@ git log --grep="validation" --oneline
 - Commit messages like "fix", "update", "misc"
 - Formatting changes mixed with behavior changes
 - No `.gitignore` in the project
-- Committing `node_modules/`, `.env`, or build artifacts
+- Committing dependency caches (`node_modules/`, `.venv/`, `vendor/`), `.env`, or build artifacts
 - Long-lived branches that diverge significantly from main
 - Force-pushing to shared branches
 
