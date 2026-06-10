@@ -8,16 +8,17 @@ Commands and skills that encode the discipline senior engineers bring to product
 
 ## Commands
 
-Four slash commands that map to the development lifecycle. Each one activates the right skills automatically.
+Three core slash commands. Each operates on your repo, ends in a pull request, and activates the right skills automatically.
 
 | What you're doing | Command | Key principle |
 |-------------------|---------|---------------|
-| Turn a rough idea into a spec'd issue | `/agent-issue` | Intent before code |
 | Build a feature or task | `/implement` | Test first, simplify every commit |
 | Fix a specific finding | `/fix` | Root cause, not symptom |
 | Restructure existing code | `/refactor` | Behavior must not change |
 
 Skills also activate automatically based on what you're doing — designing an interface triggers `api-and-interface-design`, restructuring code triggers `refactoring-strategy`, handling untrusted input triggers `security-and-hardening`, and so on.
+
+There's also an optional intake command, **`/agent-issue`** — it runs an intent interview, then files a GitHub issue with an `agent` label to trigger an automated implementer pipeline. It's GitHub-specific; if you don't run that pipeline (Jira / Linear / etc.), the portable value is the [`interview-me`](agent-toolkit/skills/interview-me.md) skill — invoke it directly to sharpen a vague ticket, then run `/implement`.
 
 ---
 
