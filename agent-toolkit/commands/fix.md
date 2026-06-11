@@ -87,11 +87,11 @@ Run this sequence **in order**. Do not commit before simplify + verify.
    - Did you add a single-use helper that could be inlined? Inline.
    - **Boundary-check before deletion:** if a simplification removes state that crosses a system boundary (server payload, persisted column, ad-SDK callback id, idempotency key), pause and verify nothing outside this file observes it. The local test suite cannot see the boundary.
 
-3. **Verify gate.** Run the project's test suite (all tests green, including any new test you added). Run the linter / static-analysis check — no new findings on the touched file. Run the type checker if the language has one — no new findings on the touched file. Different tools catch different classes of problems, so run each one that applies.
-   - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one.
+3. **Verify gate — by evidence, not assertion.** Run the project's test suite (all tests green, including any new test you added). Run the linter / static-analysis check — no new findings on the touched file. Run the type checker if the language has one — no new findings on the touched file. Different tools catch different classes of problems, so run each one that applies. **Capture the exact command and its real exit status (trailing output + exit code) and report it** — "tests pass" without the command and exit code is not a passing gate.
+   - **Never delete or weaken existing tests.** If the finding suggests adding a test, add a new one. Confirm with `git diff --stat <base>...HEAD` over your test paths that no test file shows unjustified net deletions — a green suite bought by deleting/skipping a test is a red gate.
    - If a test that previously passed now fails because of your fix, you changed behavior beyond what the finding required — revisit step 1.
    - If a simplification required a test change, revert the simplification (not the test).
-   - **Cycle cap:** if the code → test cycle repeats more than 3 times on the same finding/scope without going green, STOP and surface the blocker. Do not keep grinding.
+   - **Cycle cap:** if the code → test cycle repeats more than 3 times on the same finding/scope without going green, do not keep grinding. Take **exactly one** grounded recovery attempt first — route the real failure through the `debugging-and-error-recovery` skill (Reduce → Localize on the actual error) — then, if still red, STOP and surface the blocker.
 
 4. **Commit.** Subject prefix `chore(agent-fix):` followed by a short summary (matches what the headless fixer produces, so commit history stays consistent across interactive + pipeline runs).
 
@@ -113,7 +113,7 @@ Confirm silently (don't echo them back):
 - [ ] Fix is minimal — touches only the lines the finding addresses
 - [ ] No patch-mindset trap without a commit-body reason
 - [ ] Simplify mini-pass ran before the commit
-- [ ] Test suite + linter green (post-simplify); no existing test deleted or weakened
+- [ ] Test suite + linter ran with exit code 0 (post-simplify), command + tail captured; no-tests-weakened diff check ran, no existing test deleted or weakened
 - [ ] Commit uses `chore(agent-fix):` prefix
 
 If any box is unchecked, do not stop.
@@ -122,8 +122,9 @@ If any box is unchecked, do not stop.
 
 # Hard rules (adapted for interactive mode)
 
-- **Branch off `main` at task start, or extend the PR's branch if the finding came from a PR review comment.** Confirm with the user which one. Stay-on-main is the failure mode.
-- **Push + return a PR URL at the end.** New branch → `gh pr create --base main`. Existing PR → `git push` and tell the user which PR was updated. Lead the PR/update note with a one-line **Risk: low/medium/high** (blast radius + reversibility) so the human knows how hard to look.
+- **Resolve the default base branch first — never assume `main`.** Determine `<base>` once: honor `$TOOLKIT_BASE_BRANCH` if set, else `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` (fallback `git symbolic-ref --short refs/remotes/origin/HEAD | sed 's@^origin/@@'`).
+- **Branch off `<base>` at task start, or extend the PR's branch if the finding came from a PR review comment.** Confirm with the user which one. Staying on `<base>` is the failure mode.
+- **Push + return a PR URL at the end.** New branch → `gh pr create --base "<base>"`. Existing PR → `git push` and tell the user which PR was updated. Lead the PR/update note with a one-line **Risk: low/medium/high** (blast radius + reversibility) so the human knows how hard to look.
 - **Never edit files under `.github/`** — CODEOWNERS gates anyway.
 - **Never run destructive operations** — `rm -rf`, `git reset --hard`, `git push --force`, branch deletion of `main`. Don't propose them either.
 - **If you can't fix the finding** (missing context, unclear requirement, architectural mismatch), surface the blocker explicitly. Don't fake-finish or pretend ambiguity is resolved.
