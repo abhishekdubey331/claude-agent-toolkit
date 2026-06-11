@@ -1,0 +1,13 @@
+{
+  "id": "array-unique",
+  "type": "small-feature",
+  "size": "trivial",
+  "source": "synthetic-seed",
+  "acceptance": [
+    "unique(arr) returns a new array with duplicates removed, first occurrence wins",
+    "original input array is not mutated",
+    "order of first occurrences is preserved"
+  ],
+  "testCommand": "node --test test/*.test.mjs",
+  "mockSolutionDir": "solution"
+}

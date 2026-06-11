@@ -1,0 +1,14 @@
+{
+  "name": "claude-agent-toolkit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tooling for the claude-agent-toolkit: renderer tests + the M0 eval harness.",
+  "scripts": {
+    "test": "node --test agent-toolkit/scripts/render-review.test.mjs",
+    "eval": "node evals/scorer.mjs",
+    "eval:mock": "node evals/scorer.mjs --mock",
+    "eval:report": "node evals/report.mjs"
+  },
+  "license": "MIT"
+}
