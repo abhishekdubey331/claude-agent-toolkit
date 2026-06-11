@@ -81,7 +81,7 @@ For each commit in the plan, run this loop **in order**. Do not skip steps; do n
    - Defensive null-checks the type system already guarantees
    - Single-use helpers introduced as scaffolding that can now be inlined
    - Comments restating what the code says
-3. **Run the focused tests covering this commit's change.** They must stay GREEN (refactoring keeps behavior identical, so a red test means you broke something). Don't re-run the whole suite or the linters every commit — the full suite, linters, and coverage check run once in Phase 5. If a simplification required a test change, **revert the simplification, not the test** — you changed behavior. If a single commit won't go GREEN after 3 tries, STOP — a refactor that won't stay green means the scope/tier is wrong; reclassify with the user instead of grinding.
+3. **Run the focused tests covering this commit's change.** They must stay GREEN (refactoring keeps behavior identical, so a red test means you broke something). Don't re-run the whole suite or the linters every commit — the full suite, linters, and coverage check run once in Phase 5. If a simplification required a test change, **revert the simplification, not the test** — you changed behavior. If a single commit won't go GREEN after 3 tries, do not keep grinding: take **exactly one** grounded recovery attempt — route the actual regression through the `debugging-and-error-recovery` skill (Reduce → Localize on the real failure) to find what behavior you changed — then, if still red, STOP and reclassify the scope/tier with the user.
 4. **Commit** — Conventional Commits subject names the pattern: `refactor: extract method renderHeader`, `refactor: parallel-change step 2/3 (migrate callers)`, `refactor: introduce Repository abstraction`. Body explains the *why*. Subject ≤ 60 chars.
 
 The simplify-before-commit order is non-negotiable. Refactor commits accumulate noise fast otherwise.
@@ -92,11 +92,12 @@ The simplify-before-commit order is non-negotiable. Refactor commits accumulate 
 
 # Phase 5 — Full verify
 
-After the final commit:
+After the final commit. **Verification is by evidence, not assertion** — capture each command and its real exit status (trailing output + exit code) for the PR body:
 
-- Full test suite green
+- Full test suite — exit code 0. Show the command and its tail.
 - Linter / static analysis clean (no new findings on touched files)
 - Coverage ≥ pre-refactor baseline (run a coverage tool if available; otherwise spot-check)
+- **No-tests-weakened check.** `git diff --stat <base>...HEAD` (where `<base>` is the resolved default branch, see Hard rules) over test paths shows no unjustified net deletions — a refactor must not quietly drop coverage. Behavior-preserving means the tests are preserved too.
 - Mutation testing on T2+ if a mutation framework is configured for your language (proves tests constrain behavior, not just exercise lines)
 
 If anything's unclean, fix in a final commit — itself subjected to the Phase 4 loop.
@@ -109,8 +110,8 @@ If anything's unclean, fix in a final commit — itself subjected to the Phase 4
 - [ ] Tests were GREEN before refactor started (or characterization tests written first)
 - [ ] Two Hats Rule held — no behavior change hidden inside a refactor commit
 - [ ] Simplify mini-pass ran before every commit (Phase 4 step 2)
-- [ ] Coverage ≥ pre-refactor; no test deleted, weakened, or skip-annotated
-- [ ] Final test suite + linter GREEN; every commit `refactor:`-prefixed
+- [ ] Coverage ≥ pre-refactor; no-tests-weakened diff check ran; no test deleted, weakened, or skip-annotated
+- [ ] Final test suite + linter ran with exit code 0, command + tail captured; every commit `refactor:`-prefixed
 
 If any box is unchecked, do not stop.
 
@@ -119,8 +120,9 @@ If any box is unchecked, do not stop.
 # Hard rules (refactor-specific)
 
 - **Behavior must not change.** Anything that changes behavior belongs in a separate `feat:` or `fix:` commit. Two Hats.
-- **Branch off `main` at task start.** If `main` is checked out, `git switch -c refactor/<slug>` before any commit. If on another non-default branch, ask before extending. Stay-on-main is the failure mode.
-- **Push + open a PR at the end of Phase 6.** `git push -u origin <branch>` then `gh pr create --base main`. PR body includes the tier classification, the refactor plan, and a one-line **Risk: low/medium/high** (blast radius + reversibility).
+- **Resolve the default base branch first — never assume `main`.** Determine `<base>` once: honor `$TOOLKIT_BASE_BRANCH` if set, else `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` (fallback `git symbolic-ref --short refs/remotes/origin/HEAD | sed 's@^origin/@@'`).
+- **Branch off `<base>` at task start.** If `<base>` is checked out, `git switch -c refactor/<slug>` before any commit. If on another non-default branch, ask before extending. Staying on `<base>` is the failure mode.
+- **Push + open a PR at the end of Phase 6.** `git push -u origin <branch>` then `gh pr create --base "<base>"`. PR body includes the tier classification, the refactor plan, and a one-line **Risk: low/medium/high** (blast radius + reversibility).
 - **Never edit existing tests** unless characterization tests are explicitly part of Phase 2's prep. Adding new tests during the refactor is fine.
 - **Never delete code older than the project's history can explain.** Chesterton's Fence — if you can't say why it was put there, leave it.
 - **No Big Rewrite.** Strangler Fig / Branch by Abstraction always wins. If the plan starts to look like "rewrite this module from scratch", STOP and reclassify as T3 with the user.
@@ -129,4 +131,4 @@ If any box is unchecked, do not stop.
 
 # Stop condition
 
-You're done when Phase 6 checklist is satisfied and the PR is open against `main` (URL returned to the user). The local verify is a fast **advisory** gate, not merge-safety — report "PR opened and handed to the server-side merge gate (CI + branch protection)," not "verified, safe to merge." Summarise in one or two sentences: tier, commits made, current state.
+You're done when Phase 6 checklist is satisfied and the PR is open against `<base>` (URL returned to the user). The local verify is a fast **advisory** gate, not merge-safety — report "PR opened and handed to the server-side merge gate (CI + branch protection)," not "verified, safe to merge." Summarise in one or two sentences: tier, commits made, current state.

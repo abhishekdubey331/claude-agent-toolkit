@@ -78,6 +78,10 @@ Don't silently pick — the user can't see the trade-off otherwise.
 
 **Extract the acceptance criteria into an explicit checklist** — one independently-verifiable item per line. This checklist is the bar Phase 6 verifies against, item by item.
 
+- **Each item must be observable.** Reject any AC that merely restates the task ("implement X"); rewrite it as a check with a concrete signal ("X returns 404 on unknown id"). If you can't name how you'd observe it, it isn't an acceptance criterion yet.
+- **Edge-case sweep.** Before writing tests, add the cases the happy path hides: error/failure paths, empty and boundary inputs, and — where the change involves them — idempotence, ordering, or concurrency. These become test cases in Phase 2, not afterthoughts.
+- **Resolve ambiguity first.** Answer three questions explicitly: what does "done" mean, what is the error behavior, and what is deliberately out of scope. Any you can't answer with confidence is a clarifying question for the user before Phase 2 — the headless pipeline can't ask; you can.
+
 ---
 
 # Phase 2 — TDD: write failing tests FIRST
@@ -117,7 +121,7 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
 3. **Run the focused test(s) for this commit's change** — the test(s) covering the code you just touched must be green. Don't re-run the whole suite or the linters on every commit; the full suite + static analysis run once in Phase 5. If a simplification required a test change, you changed behavior — **revert the simplification, not the test.**
 4. **Commit** — Conventional Commits format: `feat(quiz): ...`, `fix(ui): ...`, `test(streak): ...`, `refactor(data): ...`. Subject ≤ 60 chars; body explains the *why* if non-obvious.
 
-**Loop cap:** if the code→test cycle repeats more than 3 times on the SAME scope without going green, STOP and surface the blocker to the user. Do not keep grinding — repeated failure is a signal, not a step.
+**Loop cap:** if the code→test cycle repeats more than 3 times on the SAME scope without going green, do not keep grinding — repeated failure is a signal, not a step. Before surfacing to the user, take **exactly one** grounded recovery attempt: either route the real failure through the `debugging-and-error-recovery` skill (Reduce → Localize on the actual error output) or try one alternative slicing of the change. If that attempt also fails, STOP and surface the blocker — never silently start a fourth blind cycle.
 
 **General discipline:**
 - One logical change per commit.
@@ -128,11 +132,12 @@ For each logical change you're about to commit, run this loop. **Do NOT batch co
 
 # Phase 5 — Full-suite verify (after the last commit)
 
-After your final commit, run the **full** gate one more time as a sanity check:
+After your final commit, run the **full** gate one more time as a sanity check. **Verification is by evidence, not assertion** — for each command below, capture the exact command you ran and its real exit status (the literal trailing output + the exit code), and report that in the PR's Testing section. "Tests pass" without the command and its exit code is not a passing gate.
 
-- Run the full test suite — all green.
+- Run the full test suite — exit code 0. Show the command and its tail.
 - Run the linter / static-analysis check — no NEW findings on files you touched.
 - Run the type checker (if the language has one) — no NEW findings on files you touched.
+- **No-tests-weakened check.** Run `git diff --stat <base>...HEAD` (where `<base>` is the resolved default branch, see Hard rules) over your test paths and confirm no test file shows net deletions you didn't justify — a green suite achieved by deleting or skipping a test is a red gate, not a green one.
 
 Per-commit simplify already cleaned each diff slice, but this catches anything cross-commit (e.g. an import added in commit 1 that became unused after commit 3). If anything is unclean, fix in a final `chore: cleanup post-implement` commit — itself subjected to the per-commit loop above.
 
@@ -143,11 +148,11 @@ Per-commit simplify already cleaned each diff slice, but this catches anything c
 Confirm these silently (don't echo them back):
 
 - [ ] Each acceptance-criteria item (Phase 1 checklist) is verified against the specific test/evidence that proves it — not merely "tests green"
-- [ ] Full test suite + linter green on touched files (Phase 5)
+- [ ] Full test suite + linter ran with exit code 0 on touched files, command + tail captured for the PR body (Phase 5) — not self-asserted
+- [ ] No-tests-weakened diff check ran (Phase 5); no test deleted, skipped, or suppressed without a commit-body reason
 - [ ] Simplify mini-pass ran before every commit; tests stayed green
-- [ ] No deleted or weakened tests; no skip/ignore/suppress added without a commit-body reason
 - [ ] Reuse scan done — one attestation line per new symbol (Phase 1)
-- [ ] Branched off `main`; PR opened against `main`
+- [ ] Branched off the repo's default base branch; PR opened against it (never assume `main`)
 
 The local gate is a FAST ADVISORY check, not the merge decision: passing it means the PR is ready to hand to the server-side merge gate (CI + branch protection), NOT that the change is "safe to merge." If any box is unchecked, do not stop. Address it.
 
@@ -157,8 +162,9 @@ The local gate is a FAST ADVISORY check, not the merge decision: passing it mean
 
 Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (per-commit loop) and Phase 6 (this checklist). The checklist below assumes Phase 5 passed.
 
-- **Branch off `main` at task start.** If `main` is checked out, `git switch -c feat/issue-<N>-<slug>` (or `fix/<slug>` for a defect) before any commit. If on another non-default branch, ask before extending — it may belong to another task. Stay-on-main is the failure mode.
-- **Push + open a PR after Phase 6.** `git push -u origin <branch>` then open a PR against `main` (e.g. `gh pr create --base main`). Return the PR URL to the user. Keep the PR body to four short sections so a reviewer can target their attention:
+- **Resolve the default base branch first — never assume `main`.** Determine `<base>` once: honor `$TOOLKIT_BASE_BRANCH` if set, else `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` (fallback `git symbolic-ref --short refs/remotes/origin/HEAD | sed 's@^origin/@@'`). A repo that ships from `develop`/a trunk other than `main` must branch off and target `<base>`.
+- **Branch off `<base>` at task start.** If `<base>` is checked out, `git switch -c feat/issue-<N>-<slug>` (or `fix/<slug>` for a defect) before any commit. If on another non-default branch, ask before extending — it may belong to another task. Staying on `<base>` is the failure mode.
+- **Push + open a PR after Phase 6.** `git push -u origin <branch>` then open a PR against `<base>` (e.g. `gh pr create --base "<base>"`). Return the PR URL to the user. Keep the PR body to four short sections so a reviewer can target their attention:
   - **Intent** — what this set out to do, plus any deliberate decision a diff-reader would otherwise misread as a mistake (a knowingly-removed guard, an intentional API change). Fold in the outcome of the optional high-stakes (doubt-driven) check here, if you ran one.
   - **What changed** — 1–3 bullets.
   - **Risk** — `low` / `medium` / `high`, one line why (blast radius, reversibility). Reviewers spend time proportional to this.
@@ -172,4 +178,4 @@ Note: Phase 5 (full-suite verify) is part of "done" but lives between Phase 4 (p
 
 # Stop condition
 
-You're done when Phase 6's checklist is satisfied and the PR is open against `main` (URL returned to the user) — i.e. the change has passed the advisory local verify and is handed to the server-side merge gate. Do NOT declare it "safe to merge"; that's the merge gate's call. Summarise in one or two sentences what changed and what's left.
+You're done when Phase 6's checklist is satisfied and the PR is open against `<base>` (URL returned to the user) — i.e. the change has passed the advisory local verify and is handed to the server-side merge gate. Do NOT declare it "safe to merge"; that's the merge gate's call. Summarise in one or two sentences what changed and what's left.
