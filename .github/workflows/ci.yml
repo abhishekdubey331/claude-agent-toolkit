@@ -16,3 +16,17 @@ jobs:
           node-version: "20"
       - name: Run renderer golden-fixture tests
         run: node --test agent-toolkit/scripts/render-review.test.mjs
+
+  eval-mock:
+    name: eval harness (mock)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Mock mode applies each fixture's known-good solution and asserts the
+      # oracle passes (100% or exit non-zero). Guards the fixtures + harness
+      # without needing API credentials. The real baseline is run out-of-band.
+      - name: Run eval harness in mock mode
+        run: npm run eval:mock

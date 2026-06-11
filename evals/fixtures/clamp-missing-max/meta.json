@@ -1,0 +1,13 @@
+{
+  "id": "clamp-missing-max",
+  "type": "fix",
+  "size": "trivial",
+  "source": "synthetic-seed",
+  "acceptance": [
+    "clamp(n, min, max) returns max when n > max",
+    "existing below-min and in-range behavior is unchanged",
+    "no existing test is deleted or weakened"
+  ],
+  "testCommand": "node --test test/*.test.mjs",
+  "mockSolutionDir": "solution"
+}
